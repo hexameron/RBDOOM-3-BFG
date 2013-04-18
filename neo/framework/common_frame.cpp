@@ -36,8 +36,8 @@ If you have questions concerning this license or the applicable additional terms
 
 // RB begin
 #if defined(USE_DOOMCLASSIC)
-#include "../../doomclassic/doom/doomlib.h"
-#include "../../doomclassic/doom/globaldata.h"
+#include "../doom/doomlib.h"
+#include "../doom/globaldata.h"
 #endif
 // RB end
 

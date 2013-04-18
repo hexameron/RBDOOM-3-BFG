@@ -26,50 +26,122 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#ifndef __D_MAIN__
-#define __D_MAIN__
+#include "Precompiled.h"
+#include "globaldata.h"
 
-#include "d_event.h"
+// We are referring to sprite numbers.
+#include "info.h"
 
 #ifdef __GNUG__
-#pragma interface
+#ifndef __linux__
+#pragma implementation "d_items.h"
 #endif
-
-extern const char*		extraWad;
-
-#define MAXWADFILES             20
-extern const char*		wadfiles[MAXWADFILES];
-
-void D_AddExtraWadFile( const char *file );
-void D_AddFile ( const char *file);
-
-
-
-//
-// D_DoomMain()
-// Not a globally visible function, just included for source reference,
-// calls all startup code, parses command line options.
-// If not overrided by user input, calls N_AdvanceDemo.
-//
-void D_DoomMain (void);
-
-// Called by IO functions when input is detected.
-void D_PostEvent (event_t* ev);
-
-	
-
-//
-// BASE LEVEL
-//
-void D_PageTicker (void);
-void D_PageDrawer (void);
-void D_AdvanceDemo (void);
-void D_StartTitle (void);
-
-#define R_OK	0x01
-#define X_OK	0x02
-#define W_OK	0x04
-int access(char* name, int val);
-
-
 #endif
+#include "d_items.h"
+
+
+//
+// PSPRITE ACTIONS for waepons.
+// This struct controls the weapon animations.
+//
+// Each entry is:
+//   ammo/amunition type
+//  upstate
+//  downstate
+// readystate
+// atkstate, i.e. attack/fire/hit frame
+// flashstate, muzzle flash
+//
+const weaponinfo_t	weaponinfo[NUMWEAPONS] =
+{
+    {
+	// fist
+	am_noammo,
+	S_PUNCHUP,
+	S_PUNCHDOWN,
+	S_PUNCH,
+	S_PUNCH1,
+	S_NULL
+    },	
+    {
+	// pistol
+	am_clip,
+	S_PISTOLUP,
+	S_PISTOLDOWN,
+	S_PISTOL,
+	S_PISTOL1,
+	S_PISTOLFLASH
+    },	
+    {
+	// shotgun
+	am_shell,
+	S_SGUNUP,
+	S_SGUNDOWN,
+	S_SGUN,
+	S_SGUN1,
+	S_SGUNFLASH1
+    },
+    {
+	// chaingun
+	am_clip,
+	S_CHAINUP,
+	S_CHAINDOWN,
+	S_CHAIN,
+	S_CHAIN1,
+	S_CHAINFLASH1
+    },
+    {
+	// missile launcher
+	am_misl,
+	S_MISSILEUP,
+	S_MISSILEDOWN,
+	S_MISSILE,
+	S_MISSILE1,
+	S_MISSILEFLASH1
+    },
+    {
+	// plasma rifle
+	am_cell,
+	S_PLASMAUP,
+	S_PLASMADOWN,
+	S_PLASMA,
+	S_PLASMA1,
+	S_PLASMAFLASH1
+    },
+    {
+	// bfg 9000
+	am_cell,
+	S_BFGUP,
+	S_BFGDOWN,
+	S_BFG,
+	S_BFG1,
+	S_BFGFLASH1
+    },
+    {
+	// chainsaw
+	am_noammo,
+	S_SAWUP,
+	S_SAWDOWN,
+	S_SAW,
+	S_SAW1,
+	S_NULL
+    },
+    {
+	// super shotgun
+	am_shell,
+	S_DSGUNUP,
+	S_DSGUNDOWN,
+	S_DSGUN,
+	S_DSGUN1,
+	S_DSGUNFLASH1
+    },	
+};
+
+
+
+
+
+
+
+
+

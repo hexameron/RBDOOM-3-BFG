@@ -167,7 +167,7 @@ const char* Sys_TimeStampToStr( ID_TIME_T timeStamp )
 	tm*	time = localtime( &ts );
 	if( time == NULL )
 	{
-		return "??/??/???? ??:??";
+		return "01/01/2001 00:01";
 	}
 	
 	idStr out;

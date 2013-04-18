@@ -35,7 +35,7 @@ If you have questions concerning this license or the applicable additional terms
 idCVar r_drawEyeColor( "r_drawEyeColor", "0", CVAR_RENDERER | CVAR_BOOL, "Draw a colored box, red = left eye, blue = right eye, grey = non-stereo" );
 idCVar r_motionBlur( "r_motionBlur", "0", CVAR_RENDERER | CVAR_INTEGER | CVAR_ARCHIVE, "1 - 5, log2 of the number of motion blur samples" );
 idCVar r_forceZPassStencilShadows( "r_forceZPassStencilShadows", "0", CVAR_RENDERER | CVAR_BOOL, "force Z-pass rendering for performance testing" );
-idCVar r_useStencilShadowPreload( "r_useStencilShadowPreload", "1", CVAR_RENDERER | CVAR_BOOL, "use stencil shadow preload algorithm instead of Z-fail" );
+idCVar r_useStencilShadowPreload( "r_useStencilShadowPreload", "0", CVAR_RENDERER | CVAR_BOOL, "use stencil shadow preload algorithm instead of Z-fail" );
 idCVar r_skipShaderPasses( "r_skipShaderPasses", "0", CVAR_RENDERER | CVAR_BOOL, "" );
 idCVar r_skipInteractionFastPath( "r_skipInteractionFastPath", "1", CVAR_RENDERER | CVAR_BOOL, "" );
 idCVar r_useLightStencilSelect( "r_useLightStencilSelect", "0", CVAR_RENDERER | CVAR_BOOL, "use stencil select pass" );
@@ -144,7 +144,7 @@ void RB_DrawElementsWithCounters( const drawSurf_t* surf )
 	}
 	else
 	{
-		const uint64 frameNum = ( int )( vbHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
+		const uint64 frameNum = ( vbHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
 		if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 		{
 			idLib::Warning( "RB_DrawElementsWithCounters, vertexBuffer == NULL" );
@@ -152,7 +152,7 @@ void RB_DrawElementsWithCounters( const drawSurf_t* surf )
 		}
 		vertexBuffer = &vertexCache.frameData[vertexCache.drawListNum].vertexBuffer;
 	}
-	const int vertOffset = ( int )( vbHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
+	const int vertOffset = (int)( vbHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
 	
 	// get index buffer
 	const vertCacheHandle_t ibHandle = surf->indexCache;
@@ -163,7 +163,7 @@ void RB_DrawElementsWithCounters( const drawSurf_t* surf )
 	}
 	else
 	{
-		const uint64 frameNum = ( int )( ibHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
+		const uint64 frameNum = ( ibHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
 		if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 		{
 			idLib::Warning( "RB_DrawElementsWithCounters, indexBuffer == NULL" );
@@ -172,7 +172,7 @@ void RB_DrawElementsWithCounters( const drawSurf_t* surf )
 		indexBuffer = &vertexCache.frameData[vertexCache.drawListNum].indexBuffer;
 	}
 	// RB: 64 bit fixes, changed int to GLintptrARB
-	const GLintptrARB indexOffset = ( GLintptrARB )( ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
+	const GLintptrARB indexOffset = ( GLintptrARB )( (int)( ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK );
 	// RB end
 	
 	RENDERLOG_PRINTF( "Binding Buffers: %p:%i %p:%i\n", vertexBuffer, vertOffset, indexBuffer, indexOffset );
@@ -1677,15 +1677,11 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 			qglStencilOpSeparate( GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR );
 			qglStencilOpSeparate( GL_BACK, GL_KEEP, GL_KEEP, GL_DECR );
 		}
-		else if( r_useStencilShadowPreload.GetBool() )
-		{
-			// preload + Z-pass
-			qglStencilOpSeparate( GL_FRONT, GL_KEEP, GL_DECR, GL_DECR );
-			qglStencilOpSeparate( GL_BACK, GL_KEEP, GL_INCR, GL_INCR );
-		}
 		else
 		{
 			// Z-fail
+                        qglStencilOpSeparate( GL_FRONT, GL_KEEP, GL_DECR, GL_KEEP );
+                        qglStencilOpSeparate( GL_BACK, GL_KEEP, GL_INCR, GL_KEEP );
 		}
 		
 		
@@ -1698,7 +1694,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 		}
 		else
 		{
-			const uint64 frameNum = ( int )( vbHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
+			const uint64 frameNum = ( vbHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
 			if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 			{
 				idLib::Warning( "RB_DrawElementsWithCounters, vertexBuffer == NULL" );
@@ -1706,7 +1702,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 			}
 			vertexBuffer = &vertexCache.frameData[vertexCache.drawListNum].vertexBuffer;
 		}
-		const int vertOffset = ( int )( vbHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
+		const int vertOffset = ( (intptr_t)vbHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
 		
 		// get index buffer
 		const vertCacheHandle_t ibHandle = drawSurf->indexCache;
@@ -1717,7 +1713,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 		}
 		else
 		{
-			const uint64 frameNum = ( int )( ibHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
+			const uint64 frameNum = ( ibHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
 			if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 			{
 				idLib::Warning( "RB_DrawElementsWithCounters, indexBuffer == NULL" );
@@ -1725,7 +1721,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 			}
 			indexBuffer = &vertexCache.frameData[vertexCache.drawListNum].indexBuffer;
 		}
-		const uint64 indexOffset = ( int )( ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
+		const uint64 indexOffset = ( (intptr_t)ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
 		
 		RENDERLOG_PRINTF( "Binding Buffers: %p %p\n", vertexBuffer, indexBuffer );
 		

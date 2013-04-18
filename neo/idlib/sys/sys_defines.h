@@ -108,7 +108,7 @@ If you have questions concerning this license or the applicable additional terms
 #if defined(__i386__)
 #define	CPUSTRING						"x86"
 #elif defined(__x86_64__)
-#define CPUSTRING						"x86_86"
+#define CPUSTRING						"amd64"
 #endif
 
 #ifdef __FreeBSD__
@@ -230,8 +230,8 @@ bulk of the codebase, so it is the best place for analyze pragmas.
 // RB begin
 #if defined(_MSC_VER)
 #define NO_RETURN __declspec(noreturn)
-#elif defined(__GNUC__)
-#define NO_RETURN __attribute__((noreturn))
+//#elif defined(__GNUC__)
+//#define NO_RETURN __attribute__((noreturn))
 #else
 #define NO_RETURN
 #endif

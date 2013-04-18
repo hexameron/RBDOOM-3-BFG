@@ -37,6 +37,11 @@ If you have questions concerning this license or the applicable additional terms
 
 #include <sys/types.h>
 
+//TODO: fix linux includes
+#ifndef MAX_PATH
+#define MAX_PATH 256
+#endif
+
 // Store master volume settings in archived cvars, becausue we want them to apply
 // even if a user isn't signed in.
 // The range is from 0 to 15, which matches the setting in vanilla DOOM.

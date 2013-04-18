@@ -26,6 +26,11 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+//TODO: fix linux includes
+#ifndef MAX_PATH
+#define MAX_PATH 256
+#endif
+
 // the all-important zone //
 memzone_t*	mainzone;
 

@@ -34,6 +34,15 @@ Contains the WaveFile declaration.
 ================================================================================================
 */
 
+// macro to aviod compiler warnings. TODO: check endian
+#define WAVEID_(a,b,c,d)(((d)<<24)|((c)<<16)|((b)<<8)|(a) )
+#define WAVEIDWAVE WAVEID_('W','A','V','E')
+#define WAVEIDRIFF WAVEID_('R','I','F','F')
+#define WAVEIDsmpl WAVEID_('s','m','p','l')
+#define WAVEIDdata WAVEID_('d','a','t','a')
+#define WAVEIDfmt  WAVEID_('f','m','t',' ')
+#define WAVEIDseek WAVEID_('s','e','e','k')
+
 /*
 ================================================
 idWaveFile is used for reading generic RIFF WAVE files.
@@ -109,7 +118,7 @@ public:
 #pragma pack( push, 1 )
 	struct waveFmt_t
 	{
-		static const uint32 id = 'fmt ';
+		static const uint32 id = WAVEIDfmt;
 		// This is the basic data we'd expect to see in any valid wave file
 		struct basic_t
 		{
@@ -176,14 +185,14 @@ public:
 	
 	struct dataChunk_t
 	{
-		static const uint32 id = 'data';
+		static const uint32 id = WAVEIDdata;
 		uint32 size;
 		void* data;
 	};
-	
+
 	struct formatChunk_t
 	{
-		static const uint32 id = 'fmt ';
+		static const uint32 id = WAVEIDfmt;
 		uint32 size;
 		uint16 compressionCode;
 		uint16 numChannels;
@@ -196,7 +205,7 @@ public:
 	
 	struct samplerChunk_t
 	{
-		static const uint32 id = 'smpl';
+		static const uint32 id = WAVEIDsmpl;
 		uint32 manufacturer;		// ignored
 		uint32 product;				// ignored
 		uint32 samplePeriod;		// ignored (normally 1000000000/samplesPerSec)

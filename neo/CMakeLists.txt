@@ -15,6 +15,9 @@ option(SDL2
 option(OPENAL
 		"Use OpenAL soft instead of XAudio2" OFF)
 
+option(DOOMCLASSIC
+		"Build Doom I and II" ON)
+
 if(UNIX)
 	set(OPENAL TRUE)
 endif()
@@ -50,9 +53,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
 		add_definitions(-DUSE_XINPUT)
 	endif()	
 	
-	#if(NOT ANDROID)
+	if(NOT ANDROID)
 		add_definitions(-DUSE_EXCEPTIONS)
-	#endif()
+	endif()
 	
 	# the warnings are used for every profile anyway, so put them in a variable
 	set(my_warn_flags "-Wno-pragmas -Wno-unused-variable -Wno-unused-but-set-variable -Wno-switch -Wno-unused-value -Winvalid-pch")
@@ -66,6 +69,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG -O0 -ggdb -fno-strict-aliasing ${my_warn_flags}")
 	#set(CMAKE_C_FLAGS_DEBUGALL "${CMAKE_C_FLAGS_DEBUGALL} -g -ggdb -D_DEBUG -fno-strict-aliasing ${my_warn_flags}")
 	#set(CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_PROFILE} -g -ggdb -D_DEBUG -O1 -fno-omit-frame-pointer -fno-strict-aliasing ${my_warn_flags}")
+
+	if(DOOMCLASSIC)
+		set(my_warn_flags "${my_warn_flags} -Wno-write-strings")
+	endif()
+
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -ffast-math -fno-unsafe-math-optimizations -fomit-frame-pointer -fno-strict-aliasing ${my_warn_flags}")
 	set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -g -O3 -ffast-math -fno-unsafe-math-optimizations -fomit-frame-pointer -fno-strict-aliasing ${my_warn_flags}")
 	set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -Os -ffast-math -fno-unsafe-math-optimizations -fomit-frame-pointer -fno-strict-aliasing ${my_warn_flags}")
@@ -697,13 +705,13 @@ file(GLOB EDITOR_SOUND_INCLUDES tools/sound/*.h)
 file(GLOB EDITOR_SOUND_SOURCES tools/sound/*.cpp)
 	
 
-file(GLOB DOOMCLASSIC_INCLUDES ../doomclassic/doom/*.h)
-file(GLOB DOOMCLASSIC_SOURCES ../doomclassic/doom/*.cpp)
+file(GLOB DOOMCLASSIC_INCLUDES doom/*.h)
+file(GLOB DOOMCLASSIC_SOURCES doom/*.cpp)
 
-list(REMOVE_ITEM DOOMCLASSIC_SOURCES ../doomclassic/doom/i_net_ps3.cpp)
-list(REMOVE_ITEM DOOMCLASSIC_SOURCES ../doomclassic/doom/i_net_xbox.cpp)
-list(REMOVE_ITEM DOOMCLASSIC_SOURCES ../doomclassic/doom/i_video_ps3.cpp)
-list(REMOVE_ITEM DOOMCLASSIC_SOURCES ../doomclassic/doom/i_video_xbox.cpp)
+list(REMOVE_ITEM DOOMCLASSIC_SOURCES doom/i_net_ps3.cpp)
+list(REMOVE_ITEM DOOMCLASSIC_SOURCES doom/i_net_xbox.cpp)
+list(REMOVE_ITEM DOOMCLASSIC_SOURCES doom/i_video_ps3.cpp)
+list(REMOVE_ITEM DOOMCLASSIC_SOURCES doom/i_video_xbox.cpp)
 
 file(GLOB TIMIDITY_INCLUDES libs/timidity/*.h)
 file(GLOB TIMIDITY_SOURCES libs/timidity/*.cpp)
@@ -1169,8 +1177,8 @@ if(MSVC)
 	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/renderer/jobs/staticshadowvolume/StaticShadowVolume.cpp)
 	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/renderer/jobs/ShadowShared.cpp)
 	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/renderer/RenderLog.cpp)
-	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../doomclassic/doom/i_sound_stub.cpp)
-	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../doomclassic/doom/i_sound_win32.cpp)
+	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/doom/i_sound_stub.cpp)
+	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/doom/i_sound_win32.cpp)
 	
 	foreach( src_file ${RBDOOM3_PRECOMPILED_SOURCES} )
 		#message(STATUS "/Yuprecompiled.h for ${src_file}")
@@ -1227,15 +1235,16 @@ else()
 		${SYS_INCLUDES} ${SYS_SOURCES})
 	
 	if(WIN32)
+		list(APPEND WIN32_SOURCES sys/sdl/sdl_cpu.cpp)
+		list(APPEND RBDOOM3_SOURCES
+		${WIN32_INCLUDES} ${WIN32_SOURCES} ${WIN32_RESOURCES})
+	endif()
+
+	if (DOOMCLASSIC)
 		add_definitions(-DUSE_DOOMCLASSIC)
-	
 		list(APPEND RBDOOM3_SOURCES
 			${DOOMCLASSIC_INCLUDES} ${DOOMCLASSIC_SOURCES}
-			${TIMIDITY_INCLUDES} ${TIMIDITY_SOURCES}
-			${WIN32_INCLUDES} ${WIN32_SOURCES} ${WIN32_RESOURCES})  
-	
-		#list(REMOVE_ITEM WIN32_SOURCES sys/win32/win_cpu.cpp)
-		list(APPEND WIN32_SOURCES sys/sdl/sdl_cpu.cpp)
+			${TIMIDITY_INCLUDES} ${TIMIDITY_SOURCES})
 	endif()
 	
 	if(UNIX)
@@ -1289,7 +1298,7 @@ else()
 	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/renderer/jobs/staticshadowvolume/StaticShadowVolume.cpp)
 	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/renderer/jobs/ShadowShared.cpp)
 	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/renderer/RenderLog.cpp)
-#	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../doomclassic/doom/i_sound_stub.cpp)
+#	list(REMOVE_ITEM RBDOOM3_PRECOMPILED_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/doom/i_sound_stub.cpp)
 
 	foreach( src_file ${RBDOOM3_PRECOMPILED_SOURCES} )
 		#message(STATUS "-include precompiled.h for ${src_file}")

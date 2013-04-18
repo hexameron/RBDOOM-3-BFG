@@ -26,41 +26,77 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#ifndef __M_MISC__
-#define __M_MISC__
+
+#ifndef _MAIN_H_
+#define _MAIN_H_
+
+#include "idlib/precompiled.h"
+
+#include "../doom/doomlib.h"
+#include "../doom/doominterface.h"
+#include "../doom/globaldata.h"
 
 
-#include "doomtype.h"
-//
-// MISC
-//
-boolean
-M_WriteFile
-( char const*	name,
-  void*		source,
-  int		length );
+// DHM - Nerve :: Enable demo recording for game clips
+#define _DEMO_RECORDING
 
-int
-	M_ReadFile
-	( char const*	name,
-	byte**	buffer );
+#ifdef _DEBUG
+	#define safeOutputDebug(x) printf( "%s", x );
+#else
+	#define safeOutputDebug(x)
+#endif
 
-qboolean M_WriteSaveGame( void* source, int length );
-int M_ReadSaveGame ( byte** buffer );
+struct SplitscreenData {
+	int		PLAYERCOUNT;
+	int		globalSkill;
+	int		globalEpisode;
+	int		globalLevel;
+	int		globalTimeLimit;
+	int		globalFragLimit;
+};
 
-void M_ScreenShot (void);
+void			DL_InitNetworking( DoomInterface *pdi );
 
-void M_LoadDefaults (void);
-void M_SaveDefaults (void);
+extern int		PLAYERCOUNT;
+extern bool		globalNetworking;
+extern bool		debugOutput;
+extern bool		globalLicenseFullGame;
+extern int		globalRichPresenceState;  // values from spa.h X_CONTEXT_PRESENCE
+extern int		globalNeedUpsell;
+// PS3
+//extern HXUISTRINGTABLE globalStrings;     // gStrings for short
+extern bool		globalPauseTime;
 
 
-int
-M_DrawText
-( int		x,
-  int		y,
-  qboolean	direct,
-  char*		string );
+enum MenuStates{
+	MENU_NONE,
+	MENU_XBOX_SYSTEM,
+	MENU_PAUSE,
+	MENU_UPSELL,
+	MENU_UPSELL_INVITE,
+	MENU_ENDLEVEL_UPSELL,
+	MENU_ERROR_MESSAGE,
+	MENU_ERROR_MESSAGE_FATAL,
+	MENU_END_LEVEL,
+	MENU_END_EPISODE,
+	MENU_END_CAST,
+	MENU_END_LEVEL_COOP,
+	MENU_END_LEVEL_DM,
+	MENU_END_GAME_LOBBY,
+	MENU_END_GAME_LOBBY_PLAYER,
+	MENU_LOBBY,
+	MENU_LOBBY_PLAYER,
+	MENU_INVITE,
+	MENU_COUNT
+};
+
+typedef struct {
+	int maxPing;
+	
+	const wchar_t *	image;
+} PingImage_t;
+
+extern PingImage_t pingsImages[];
 
 
 #endif
-

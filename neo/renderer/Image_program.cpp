@@ -430,13 +430,13 @@ static bool R_ParseImageProgram_r( idLexer& src, byte** pic, int* width, int* he
 	// material that specifies the _black texture.
 	if( token == "_black" )
 	{
-		token = "textures\\black";
+		token = "textures/black";
 	}
 	
 	// also check for _white
 	if( token == "_white" )
 	{
-		token = "guis\\assets\\white";
+		token = "guis/assets/white";
 	}
 	
 	AppendToken( token );

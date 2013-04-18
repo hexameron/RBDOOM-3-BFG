@@ -34,7 +34,9 @@ If you have questions concerning this license or the applicable additional terms
 #include "m_fixed.h"
 
 #ifdef __GNUG__
+#ifndef __linux__
 #pragma implementation "info.h"
+#endif
 #endif
 #include "info.h"
 

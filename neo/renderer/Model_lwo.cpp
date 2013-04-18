@@ -2261,7 +2261,6 @@ int lwGetPolygons5( idFile* fp, int cksize, lwPolygonList* plist, int ptoffset )
 	unsigned char* buf, *bp;
 	int i, j, nv, nverts, npols;
 	
-	
 	if( cksize == 0 ) return 1;
 	
 	/* read the whole chunk */
@@ -2305,13 +2304,14 @@ int lwGetPolygons5( idFile* fp, int cksize, lwPolygonList* plist, int ptoffset )
 		for( j = 0; j < nv; j++ )
 			pv[ j ].index = sgetU2( &bp ) + ptoffset;
 		j = sgetI2( &bp );
+		// j is read as a signed short, and written as a pointer
 		if( j < 0 )
 		{
 			j = -j;
 			bp += 2;
 		}
 		j -= 1;
-		pp->surf = ( lwSurface* ) j; // DG: FIXME: cast int to pointer?!
+		pp->surf = ( lwSurface* )(intptr_t) j;
 		
 		pp++;
 		pv += nv;
@@ -3032,7 +3032,7 @@ int lwGetPolygonTags( idFile* fp, int cksize, lwTagList* tlist, lwPolygonList* p
 {
 	unsigned int type;
 	int rlen = 0, i, j;
-	
+
 	set_flen( 0 );
 	type = getU4( fp );
 	rlen = get_flen();
@@ -3054,7 +3054,7 @@ int lwGetPolygonTags( idFile* fp, int cksize, lwTagList* tlist, lwPolygonList* p
 		switch( type )
 		{
 			case ID_SURF:
-				plist->pol[ i ].surf = ( lwSurface* ) j; // DG: FIXME: cast int to pointer?!
+				plist->pol[ i ].surf = ( lwSurface* )(intptr_t) j;
 				break;
 			case ID_PART:
 				plist->pol[ i ].part = j;

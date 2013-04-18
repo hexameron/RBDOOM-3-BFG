@@ -23,7 +23,9 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #define __WIN32__
 #endif
 
-#define LITTLE_ENDIAN
+#ifndef LITTLE_ENDIAN
+#define LITTLE_ENDIAN 1234
+#endif
 
 #include <stdint.h>
 

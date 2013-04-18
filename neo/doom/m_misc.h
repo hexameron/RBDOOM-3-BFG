@@ -26,53 +26,22 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#include "Precompiled.h"
-#include "globaldata.h"
+#ifndef __M_MISC__
+#define __M_MISC__
 
 
-#ifdef __GNUG__
-#pragma implementation "dstrings.h"
+#include "doomtype.h"
+//
+// MISC
+//
+qboolean M_WriteFile ( char const* name, void* source, int length );
+int M_ReadFile ( char const* name, byte** buffer );
+qboolean M_WriteSaveGame ( void* source, int length );
+int M_ReadSaveGame ( byte** buffer );
+void M_ScreenShot (void);
+void M_LoadDefaults (void);
+void M_SaveDefaults (void);
+int M_DrawText ( int x, int y, qboolean direct, char* string );
+
 #endif
-#include "dstrings.h"
-
-
-
-const char* endmsg[NUM_QUITMESSAGES+1]=
-{
-  // DOOM1
-  QUITMSG,
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?"
-
-  // QuitDOOM II messages
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?"
-
-  // FinalDOOM?
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-  "are you sure you want to quit?",
-
-  // Internal debug. Different style, too.
-  "are you sure you want to quit?"
-};
-
-
-  
-
-
 

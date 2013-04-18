@@ -26,77 +26,59 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#ifndef __D_MAIN__
+#define __D_MAIN__
 
-#ifndef _MAIN_H_
-#define _MAIN_H_
+#include "d_event.h"
 
-#include "idlib/precompiled.h"
-
-#include "../doom/doomlib.h"
-#include "../doom/doominterface.h"
-#include "../doom/globaldata.h"
-
-
-// DHM - Nerve :: Enable demo recording for game clips
-#define _DEMO_RECORDING
-
-#ifdef _DEBUG
-	#define safeOutputDebug(x) printf( "%s", x );
-#else
-	#define safeOutputDebug(x)
+#ifdef __GNUG__
+#pragma interface
 #endif
 
-struct SplitscreenData {
-	int		PLAYERCOUNT;
-	int		globalSkill;
-	int		globalEpisode;
-	int		globalLevel;
-	int		globalTimeLimit;
-	int		globalFragLimit;
-};
+extern const char*		extraWad;
 
-void			DL_InitNetworking( DoomInterface *pdi );
+#define MAXWADFILES             20
+extern const char*		wadfiles[MAXWADFILES];
 
-extern int		PLAYERCOUNT;
-extern bool		globalNetworking;
-extern bool		debugOutput;
-extern BOOL		globalLicenseFullGame;
-extern int		globalRichPresenceState;  // values from spa.h X_CONTEXT_PRESENCE
-extern int		globalNeedUpsell;
-// PS3
-//extern HXUISTRINGTABLE globalStrings;     // gStrings for short
-extern bool		globalPauseTime;
+void D_AddExtraWadFile( const char *file );
+void D_AddFile ( const char *file);
 
 
-enum MenuStates{
-	MENU_NONE,
-	MENU_XBOX_SYSTEM,
-	MENU_PAUSE,
-	MENU_UPSELL,
-	MENU_UPSELL_INVITE,
-	MENU_ENDLEVEL_UPSELL,
-	MENU_ERROR_MESSAGE,
-	MENU_ERROR_MESSAGE_FATAL,
-	MENU_END_LEVEL,
-	MENU_END_EPISODE,
-	MENU_END_CAST,
-	MENU_END_LEVEL_COOP,
-	MENU_END_LEVEL_DM,
-	MENU_END_GAME_LOBBY,
-	MENU_END_GAME_LOBBY_PLAYER,
-	MENU_LOBBY,
-	MENU_LOBBY_PLAYER,
-	MENU_INVITE,
-	MENU_COUNT
-};
 
-typedef struct {
-	int maxPing;
+//
+// D_DoomMain()
+// Not a globally visible function, just included for source reference,
+// calls all startup code, parses command line options.
+// If not overrided by user input, calls N_AdvanceDemo.
+//
+void D_DoomMain (void);
+
+// Called by IO functions when input is detected.
+void D_PostEvent (event_t* ev);
+
 	
-	const wchar_t *	image;
-} PingImage_t;
 
-extern PingImage_t pingsImages[];
+//
+// BASE LEVEL
+//
+void D_PageTicker (void);
+void D_PageDrawer (void);
+void D_AdvanceDemo (void);
+void D_StartTitle (void);
+
+#ifndef F_OK
+#define F_OK    0x00
+#endif
+#ifndef R_OK
+#define R_OK	0x01
+#endif
+#ifndef X_OK
+#define X_OK	0x02
+#endif
+#ifndef W_OK
+#define W_OK	0x04
+#endif
+int access(char* name, int val);
 
 
 #endif

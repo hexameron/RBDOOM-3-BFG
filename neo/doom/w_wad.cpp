@@ -45,7 +45,9 @@ If you have questions concerning this license or the applicable additional terms
 #include "idlib/precompiled.h"
 
 #ifdef __GNUG__
+#ifndef __linux__
 #pragma implementation "w_wad.h"
+#endif
 #endif
 #include "w_wad.h"
 

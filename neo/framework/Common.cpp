@@ -39,9 +39,9 @@ If you have questions concerning this license or the applicable additional terms
 
 // RB begin
 #if defined(USE_DOOMCLASSIC)
-#include "../../doomclassic/doom/doomlib.h"
-#include "../../doomclassic/doom/d_event.h"
-#include "../../doomclassic/doom/d_main.h"
+#include "../doom/doomlib.h"
+#include "../doom/d_event.h"
+#include "../doom/d_main.h"
 #endif
 // RB end
 
@@ -1210,7 +1210,8 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 		const bool showVideo = ( !com_skipIntroVideos.GetBool() && fileSystem->UsingResourceFiles() );
 		if( showVideo )
 		{
-			RenderBink( "video\\loadvideo.bik" );
+			RenderSplash(); // FIXME
+			RenderBink( "video/loadvideo.bik" );
 			RenderSplash();
 			RenderSplash();
 		}
@@ -1218,7 +1219,8 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 		{
 			idLib::Printf( "Skipping Intro Videos!\n" );
 			// display the legal splash screen
-			// No clue why we have to render this twice to show up...
+			RenderSplash();
+			// No clue why we have to render this thrice to show up...
 			RenderSplash();
 			RenderSplash();
 		}

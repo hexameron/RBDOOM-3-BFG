@@ -36,6 +36,13 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "idlib/containers/Array.h"
 
+//TODO: fix linux includes
+#ifdef __linux__
+#define MAX_PATH 256
+#include <netinet/in.h>
+#endif
+
+
 class idSysMutex;
 class idUserCmdMgr;
 
@@ -93,8 +100,8 @@ struct ExpansionData {
 
 namespace DoomLib
 {
-	typedef int ( *RecvFunc)( char* buff, DWORD *numRecv );
-	typedef int ( *SendFunc)( const char* buff, DWORD size, sockaddr_in *target, int toNode );
+	typedef int ( *RecvFunc)( char* buff, unsigned int *numRecv );
+	typedef int ( *SendFunc)( const char* buff, unsigned int size, sockaddr_in *target, int toNode );
 	typedef int ( *SendRemoteFunc)();
 
 	void InitGlobals( void *ptr = NULL );
