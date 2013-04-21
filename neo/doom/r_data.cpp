@@ -150,7 +150,7 @@ R_DrawColumnInCache
 	if (count > 0)
 	    memcpy (cache + position, source, count);
 		
-	patch = (postColumn_t *)(  (byte *)patch + patch->length + 4); 
+	patch = (postColumn_t *)(  (byte *)patch + patch->length + 4 ); 
     }
 }
 
@@ -174,7 +174,7 @@ void R_GenerateComposite (int texnum)
     int				i;
     postColumn_t*	patchcol;
     short*			collump;
-    unsigned short*	colofs;
+    unsigned short*		colofs;
 	
     texture = ::g->s_textures[texnum];
 
@@ -273,7 +273,7 @@ void R_GenerateLookup (int texnum)
 	{
 	    patchcount[x]++;
 	    collump[x] = patch->patch;
-	    colofs[x] = LONG(realpatch->columnofs[x-x1])+3;
+	    colofs[x] = (unsigned short)(realpatch->columnofs[x-x1])+3;
 	}
     }
 	
@@ -414,13 +414,13 @@ void R_InitTextures (void)
 
 		::g->s_numtextures = numtextures1 + numtextures2;
 
-		::g->s_textures = (texture_t**)DoomLib::Z_Malloc (::g->s_numtextures*4, PU_STATIC_SHARED, 0);
-		::g->s_texturecolumnlump = (short**)DoomLib::Z_Malloc (::g->s_numtextures*4, PU_STATIC_SHARED, 0);
-		::g->s_texturecolumnofs = (unsigned short**)DoomLib::Z_Malloc (::g->s_numtextures*4, PU_STATIC_SHARED, 0);
-		::g->s_texturewidthmask = (int*)DoomLib::Z_Malloc (::g->s_numtextures*4, PU_STATIC_SHARED, 0);
-		::g->s_textureheight = (fixed_t*)DoomLib::Z_Malloc (::g->s_numtextures*4, PU_STATIC_SHARED, 0);
-		::g->s_texturecomposite = (byte**)DoomLib::Z_Malloc (::g->s_numtextures*4, PU_STATIC_SHARED, 0);
-		::g->s_texturecompositesize = (int*)DoomLib::Z_Malloc (::g->s_numtextures*4, PU_STATIC_SHARED, 0);
+		::g->s_textures = (texture_t**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_texturecolumnlump = (short**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_texturecolumnofs = (unsigned short**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_texturewidthmask = (int*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_textureheight = (fixed_t*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_texturecomposite = (byte**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_texturecompositesize = (int*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
 
 		totalwidth = 0;
 
