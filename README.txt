@@ -95,15 +95,7 @@ any other Steam features.
 Bink:
 -----
 The Doom 3 BFG Edition GPL Source Code release does not include functionality for rendering Bink Videos.
-
-
-Back End Rendering of Stencil Shadows:
---------------------------------------
-
-The Doom 3 BFG Edition GPL Source Code release does not include functionality enabling rendering
-of stencil shadows via the "depth fail" method, a functionality commonly known as "Carmack's Reverse".
-
-
+It may become possible to play embedded Bink Videos in Doom 3 BFG using the open source FFMEG codecs. 
 
 _______________________________
 
@@ -261,6 +253,8 @@ ___________________________________________________
 12) BUG REPORTS
 __________________________________________
 
+Please do not report bugs unless you are using the latest code from https://github.com/RobertBeckebans/RBDOOM-3-BFG
+
 RBDoom3BFG is not perfect, it is not bug free as every other software.
 For fixing as much problems as possible we need as much bug reports as possible.
 We cannot fix anything if we do not know about the problems.
@@ -296,6 +290,12 @@ EXCLUDED CODE:  The code described below and contained in the Doom 3 BFG Edition
 is not part of the Program covered by the GPL and is expressly excluded from its terms. 
 You are solely responsible for obtaining from the copyright holder a license for such code and complying with the applicable license terms.
 
+FFMPEG
+-----------------------------------------------------------------------------
+Most files in FFmpeg are under the GNU Lesser General Public License version 2.1
+or later (LGPL v2.1+). Read the file COPYING.LGPLv2.1 for details. Some other
+files have MIT/X11/BSD-style licenses. In combination the LGPL v2.1+ applies to
+FFmpeg.
 
 JPEG library
 -----------------------------------------------------------------------------
@@ -485,5 +485,4 @@ If you'd like to continue hacking on TiMidity, feel free. I'm
 hereby extending the TiMidity license agreement: you can now 
 select the most convenient license for your needs from (1) the
 GNU GPL, (2) the GNU LGPL, or (3) the Perl Artistic License.  
-
 
