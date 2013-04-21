@@ -226,7 +226,7 @@ idMenuWidget_Carousel::Update
 void idMenuWidget_Carousel::MoveToIndex( int index, bool instant )
 {
 
-	idLib::Printf( "moveToIndex %i\n", index );
+//	idLib::Printf( "moveToIndex %i\n", index );
 	
 	if( instant )
 	{
@@ -234,7 +234,7 @@ void idMenuWidget_Carousel::MoveToIndex( int index, bool instant )
 		moveDiff = 0;
 		moveToIndex = viewIndex;
 		
-		idLib::Printf( "moveDiff = %i\n", moveDiff );
+//		idLib::Printf( "moveDiff = %i\n", moveDiff );
 		
 		idSWFScriptObject& root = GetSWFObject()->GetRootObject();
 		if( BindSprite( root ) )
@@ -251,7 +251,7 @@ void idMenuWidget_Carousel::MoveToIndex( int index, bool instant )
 		fastScroll = false;
 		moveDiff = 0;
 		
-		idLib::Printf( "moveDiff = %i\n", moveDiff );
+//		idLib::Printf( "moveDiff = %i\n", moveDiff );
 		
 		viewIndex = moveToIndex;
 		return;
@@ -269,7 +269,7 @@ void idMenuWidget_Carousel::MoveToIndex( int index, bool instant )
 		moveDiff = index;
 	}
 	
-	idLib::Printf( "moveDiff = %i\n", moveDiff );
+//	idLib::Printf( "moveDiff = %i\n", moveDiff );
 	
 	if( scrollLeft )
 	{
@@ -291,7 +291,7 @@ void idMenuWidget_Carousel::MoveToIndex( int index, bool instant )
 		}
 	}
 	
-	idLib::Printf( "moveDiff = %i\n", moveDiff );
+//	idLib::Printf( "moveDiff = %i\n", moveDiff );
 	
 	if( moveDiff != 0 )
 	{
@@ -319,6 +319,6 @@ void idMenuWidget_Carousel::MoveToIndex( int index, bool instant )
 		}
 	}
 	
-	idLib::Printf( "moveDiff = %i\n", moveDiff );
+//	idLib::Printf( "moveDiff = %i\n", moveDiff );
 }
 

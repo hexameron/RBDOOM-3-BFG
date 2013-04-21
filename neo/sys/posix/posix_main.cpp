@@ -114,9 +114,13 @@ void Posix_Exit( int ret )
 	// we use set_exit to maintain a correct exit code
 	if( set_exit )
 	{
-		exit( set_exit );
+		ret = set_exit;
 	}
-	exit( ret );
+#if _DEBUG
+        exit( ret );
+#else
+	_exit( ret );
+#endif
 }
 
 /*

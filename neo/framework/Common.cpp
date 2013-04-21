@@ -1206,27 +1206,19 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 			splashScreen = declManager->FindMaterial( "guis/assets/splash/legal_english" );
 		}
 		
-		const int legalMinTime = 4000;
 		const bool showVideo = ( !com_skipIntroVideos.GetBool() && fileSystem->UsingResourceFiles() );
 		if( showVideo )
 		{
-			RenderSplash(); // FIXME
 			RenderBink( "video/loadvideo.bik" );
-			RenderSplash();
-			RenderSplash();
 		}
 		else
 		{
 			idLib::Printf( "Skipping Intro Videos!\n" );
-			// display the legal splash screen
-			RenderSplash();
-			// No clue why we have to render this thrice to show up...
-			RenderSplash();
-			RenderSplash();
 		}
+		RenderSplash();
+		RenderSplash();
+		RenderSplash();	
 		
-		
-		int legalStartTime = Sys_Milliseconds();
 		declManager->Init2();
 		
 		// initialize string database so we can use it for loading messages
@@ -1301,13 +1293,6 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 		AddStartupCommands();
 		
 		StartMenu( true );
-		
-		while( Sys_Milliseconds() - legalStartTime < legalMinTime )
-		{
-			RenderSplash();
-			Sys_GenerateEvents();
-			Sys_Sleep( 10 );
-		};
 		
 		// print all warnings queued during initialization
 		PrintWarnings();

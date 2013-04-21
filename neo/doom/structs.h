@@ -218,7 +218,7 @@ struct default_t
 		const char * *	charLocation;
 	};
 	union {
-		int				defaultvalue;
+		intptr_t	defaultvalue;
 		const char *	charDefault;
 	};
     int		scantranslate;		// PC scan code hack
@@ -232,7 +232,7 @@ struct default_t
 		untranslated( 0 ) {
 	}
 
-	default_t( char * name_, int * location_, int defaultvalue_ ) :
+	default_t( char * name_, int * location_, intptr_t defaultvalue_ ) :
 		name( name_ ),
 		location( location_ ),
 		defaultvalue( defaultvalue_ ) {
@@ -348,7 +348,11 @@ typedef struct
     int			masked;	
     short		width;
     short		height;
-    void		**columndirectory;	// OBSOLETE
+
+
+//    void		**columndirectory;	// OBSOLETE
+    int			obsolete32bitpointer;
+
     short		patchcount;
     mappatch_t	patches[1];
 } maptexture_t;

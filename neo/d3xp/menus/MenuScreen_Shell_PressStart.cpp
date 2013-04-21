@@ -328,7 +328,7 @@ bool idMenuScreen_Shell_PressStart::HandleAction( idWidgetAction& action, const 
 				return true;
 			}
 			
-			idLib::Printf( "scroll \n" );
+//			idLib::Printf( "scroll \n" );
 			
 			if( itemList->GetMoveDiff() > 0 )
 			{

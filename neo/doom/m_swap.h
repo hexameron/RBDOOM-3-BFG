@@ -49,7 +49,7 @@ inline unsigned short SwapSHORT(unsigned short x)
 }
 
 // Swapping 32bit.
-inline unsigned long SwapLONG( unsigned long x)
+inline unsigned int SwapLONG( unsigned int x)
 {
     return
 	(x>>24)
@@ -60,7 +60,7 @@ inline unsigned long SwapLONG( unsigned long x)
 
 
 #define SHORT(x)	((short)SwapSHORT((unsigned short) (x)))
-#define LONG(x)         ((long)SwapLONG((unsigned long) (x)))
+#define LONG(x)         ((int)SwapLONG((unsigned int) (x)))
 #else
 #define SHORT(x)	(x)
 #define LONG(x)         (x)
