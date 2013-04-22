@@ -1107,8 +1107,6 @@ int I_RegisterSong(void* data, int length)
 	// does nothing
 	return 0;
 }
-#else
-	//TODO: fix linux sound
-	void I_ProcessSoundEvents( void ) {};
+
 #endif // _MSC_VER
 // DG end

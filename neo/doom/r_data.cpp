@@ -273,7 +273,7 @@ void R_GenerateLookup (int texnum)
 	{
 	    patchcount[x]++;
 	    collump[x] = patch->patch;
-	    colofs[x] = (unsigned short)(realpatch->columnofs[x-x1])+3;
+	    colofs[x] = SHORTEN(realpatch->columnofs[x-x1]) + 3;
 	}
     }
 	
