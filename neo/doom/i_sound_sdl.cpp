@@ -1,3 +1,35 @@
+/*
+ ===========================================================================
+
+Doom 3 BFG Edition GPL Source Code
+Copyright (C) 1993-2012 id Software LLC, a ZeniMax Media company.
+
+This file is part of the Doom 3 BFG Edition GPL Source Code ("Doom 3 BFG Edition Source Code").
+
+Doom 3 BFG Edition Source Code is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Doom 3 BFG Edition Source Code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Doom 3 BFG Edition Source Code.  If not, see <http://www.gnu.org/licenses/>.
+
+In addition, the Doom 3 BFG Edition Source Code is also subject to certain additional terms. You should have received a copy of these additional terms immediately following the terms and conditions of the GNU General Public License which accompanied the Doom 3 BFG Edition Source Code.  If not, please request a copy in writing from id Software at the address below.
+
+If you have questions concerning this license or the applicable additional terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
+
+===========================================================================
+*/
+
+
+
+
+
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
@@ -44,8 +76,7 @@
 #include "doomtype.h"
 #include "d_main.h"
 
-/* Define this if you want to use the MIDI music support */
-//#define HAVE_MIXER
+bool		Music_initialized = false;
 
 /* The number of internal mixing channels,
   the samples calculated for each mixing step,
@@ -176,10 +207,6 @@ getsfx
     // Return allocated padded data.
     return (void *) (paddedsfx + 8);
 }
-
-
-
-
 
 //
 // This function adds a sound to the
@@ -428,7 +455,9 @@ int I_SoundIsPlaying(int handle)
     return 1; // gametic < handle;
 }
 
+void I_UpdateSound( void ){}
 
+// Adust sound for current player location.
 //
 // This function loops all active (internal) sound
 //  channels, retrieves a given number of samples
@@ -440,6 +469,8 @@ int I_SoundIsPlaying(int handle)
 //
 // This function currently supports only 16bit.
 //
+
+// SDL callback
 void I_UpdateSound(void *unused, Uint8 *stream, int len)
 {
   // Mix current sound data.
@@ -448,7 +479,6 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
   register int		dl;
   register int		dr;
   
-  // Pointers in audio stream, left, right, end.
   signed short*		leftout;
   signed short*		rightout;
   signed short*		leftend;
@@ -459,9 +489,7 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
   int				chan;
     
 #ifdef HAVE_MIXER
-extern void music_mixer(void *udata, Uint8 *stream, int len);
     // Mix in the music
-    music_mixer(NULL, stream, len);
 #endif
 
     // Left and right channel
@@ -548,11 +576,6 @@ I_UpdateSoundParams
   int	sep,
   int	pitch)
 {
-  // I fail to see that this is used.
-  // Would be using the handle to identify
-  //  on which channel the sound might be active,
-  //  and resetting the channel parameters.
-
   // UNUSED.
   handle = vol = sep = pitch = 0;
 }
@@ -622,54 +645,12 @@ I_InitSound()
 
 void I_SubmitSound(void){}
 
-#if 1 //  stub music
-//
-////  MUSIC I/O
-////
-void I_InitMusic(void){}
-//
-void I_ShutdownMusic(void){}
-//
-//// Volume.
-void I_SetMusicVolume(int volume){}
-//
-//// PAUSE game handling.
-void I_PauseSong(int handle){}
-//
-void I_ResumeSong(int handle){}
-//
-//// Registers a song handle to song data.
-int I_RegisterSong(void *data, int length)
-{ return 0; }
-//
-//// Called by anything that wishes to start music.
-////  plays a song, and when the song is done,
-////  starts playing it again in an endless loop.
-//// Horrible thing to do, considering.
-void I_PlaySong( const char *songname, int looping ){}
-//
-//// Stops a song over 3 seconds.
-void I_StopSong(int handle){}
-
-//// See above (register), then think backwards
-void I_UnRegisterSong(int handle){}
-
-//// Update Music (XMP), check for notifications
-void I_UpdateMusic(void){}
-//
 void I_ProcessSoundEvents( void ) {}
-#else
 //
 // MUSIC API.
 //
 
-#ifdef HAVE_MIXER
-#include "mixer.h"
-#endif
-#include "qmus2mid.h"
-
-/* FIXME: Make this file instance-specific */
-#define MIDI_TMPFILE	"/tmp/.lsdlmidi"
+int Mus2Midi(unsigned char* bytes, unsigned char* out, int* len);
 
 #ifdef HAVE_MIXER
 static Mix_Music *music[2] = { NULL, NULL };
@@ -677,6 +658,8 @@ static Mix_Music *music[2] = { NULL, NULL };
 
 void I_ShutdownMusic(void) 
 {
+
+Music_initialized = false;
 #ifdef HAVE_MIXER
   /* Should this be exposed in mixer.h? */
   extern void close_music(void);
@@ -687,6 +670,9 @@ void I_ShutdownMusic(void)
 
 void I_InitMusic(void)
 {
+
+Music_initialized = true;
+
 #ifdef HAVE_MIXER
   /* Should this be exposed in mixer.h? */
   extern int open_music(SDL_AudioSpec *);
@@ -698,14 +684,28 @@ void I_InitMusic(void)
 #endif
 }
 
-void I_PlaySong(int handle, int looping)
+namespace {
+	const int MaxMidiConversionSize = 1024 * 1024;
+	unsigned char midiConversionBuffer[MaxMidiConversionSize];
+}
+
+void I_PlaySong( const char *songname, int looping)
 {
-//printf("Playing song %d (%d loops)\n", handle, looping);
-#ifdef HAVE_MIXER
-  if ( music[handle] ) {
-    Mix_FadeInMusic(music[handle], looping ? -1 : 0, 500);
-  }
-#endif
+	int length = 0;
+	idStr lumpName = "d_";
+
+	lumpName += static_cast< const char * >( songname );
+	unsigned char * musFile = static_cast< unsigned char * >( W_CacheLumpName( lumpName.c_str(), PU_STATIC_SHARED ) );
+
+
+	if ( !Music_initialized ) return;
+
+	Mus2Midi( musFile, midiConversionBuffer, &length );
+
+//TODO: now play it !
+
+//	if ( DoomLib::GetPlayer() >= 0 ) ::g->mus_looping = looping;
+
 }
 
 extern int mus_pause_opt; // From m_misc.c
@@ -745,42 +745,12 @@ void I_StopSong(int handle)
 
 void I_UnRegisterSong(int handle)
 {
-//printf("Unregistering song %d\n", handle);
-#ifdef HAVE_MIXER
-  if ( music[handle] ) {
-    Mix_FreeMusic(music[handle]);
-    music[handle] = NULL;
-  }
-  unlink(MIDI_TMPFILE);
-#endif
+// Does nothing.
 }
 
 int I_RegisterSong(void* data, size_t len)
 {
-  FILE *midfile;
-
-//printf("Registering song {%c%c%c}\n", ((unsigned char *)data)[0],
-//                                      ((unsigned char *)data)[1],
-//                                      ((unsigned char *)data)[2]);
-  midfile = fopen(MIDI_TMPFILE, "wb");
-  if ( midfile == NULL ) {
-    printf("Couldn't write MIDI to %s\n", MIDI_TMPFILE);
-    return 0;
-  }
-  /* Convert MUS chunk to MIDI? */
-  if ( memcmp(data, "MUS", 3) == 0 ) {
-    qmus2mid(data, len, midfile, 1, 0, 0, 0);
-  } else {
-    fwrite(data, len, 1, midfile);
-  }
-  fclose(midfile);
-
-#ifdef HAVE_MIXER
-  music[0] = Mix_LoadMUS(MIDI_TMPFILE);
-  if ( music[0] == NULL ) {
-    printf("Couldn't load MIDI from %s: %s\n", MIDI_TMPFILE, Mix_GetError());
-  }
-#endif
+// Does nothing.
   return (0);
 }
 
@@ -791,6 +761,5 @@ void I_SetMusicVolume(int volume)
   Mix_VolumeMusic(volume*8);
 #endif
 }
-#endif //music
 
 #endif // _MSC_VER not defined

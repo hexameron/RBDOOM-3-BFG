@@ -417,10 +417,10 @@ void R_InitTextures (void)
 		::g->s_textures = (texture_t**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
 		::g->s_texturecolumnlump = (short**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
 		::g->s_texturecolumnofs = (unsigned short**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
-		::g->s_texturewidthmask = (int*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
-		::g->s_textureheight = (fixed_t*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_texturewidthmask = (int*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(int), PU_STATIC_SHARED, 0);
+		::g->s_textureheight = (fixed_t*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(fixed_t), PU_STATIC_SHARED, 0);
 		::g->s_texturecomposite = (byte**)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
-		::g->s_texturecompositesize = (int*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(size_t), PU_STATIC_SHARED, 0);
+		::g->s_texturecompositesize = (int*)DoomLib::Z_Malloc (::g->s_numtextures*sizeof(int), PU_STATIC_SHARED, 0);
 
 		totalwidth = 0;
 
@@ -454,7 +454,7 @@ void R_InitTextures (void)
 			if (offset > maxoff)
 				I_Error ("R_InitTextures: bad texture directory");
 		
-			mtexture = (maptexture_t *) ( (byte *)maptex + offset);
+			mtexture = (maptexture_t *) ( (byte *)maptex + (intptr_t)offset);
 
 			texture = ::g->s_textures[i] = (texture_t*)DoomLib::Z_Malloc (sizeof(texture_t)
 				+ sizeof(texpatch_t)*(SHORT(mtexture->patchcount)-1), PU_STATIC_SHARED, 0);
@@ -503,7 +503,7 @@ void R_InitTextures (void)
 
 	// ALAN:  These animations are done globally -- can it be shared?
 	// Create translation table for global animation.
-	::g->texturetranslation = (int*)DoomLib::Z_Malloc ((::g->s_numtextures+1)*4, PU_STATIC, 0);
+	::g->texturetranslation = (int*)DoomLib::Z_Malloc ((::g->s_numtextures+1)*sizeof(int), PU_STATIC, 0);
 
 	for (i=0 ; i < ::g->s_numtextures ; i++)
 		::g->texturetranslation[i] = i;	
@@ -523,7 +523,7 @@ void R_InitFlats (void)
     ::g->numflats = ::g->lastflat - ::g->firstflat + 1;
 	
     // Create translation table for global animation.
-    ::g->flattranslation = (int*)DoomLib::Z_Malloc ((::g->numflats+1)*4, PU_STATIC, 0);
+    ::g->flattranslation = (int*)DoomLib::Z_Malloc ((::g->numflats+1)*sizeof(int), PU_STATIC, 0);
     
     for (i=0 ; i < ::g->numflats ; i++)
 	::g->flattranslation[i] = i;
@@ -545,9 +545,9 @@ void R_InitSpriteLumps (void)
     ::g->lastspritelump = W_GetNumForName ("S_END") - 1;
     
     ::g->numspritelumps = ::g->lastspritelump - ::g->firstspritelump + 1;
-    ::g->spritewidth = (fixed_t*)DoomLib::Z_Malloc (::g->numspritelumps*4, PU_STATIC, 0);
-    ::g->spriteoffset = (fixed_t*)DoomLib::Z_Malloc (::g->numspritelumps*4, PU_STATIC, 0);
-    ::g->spritetopoffset = (fixed_t*)DoomLib::Z_Malloc (::g->numspritelumps*4, PU_STATIC, 0);
+    ::g->spritewidth = (fixed_t*)DoomLib::Z_Malloc (::g->numspritelumps*sizeof(fixed_t), PU_STATIC, 0);
+    ::g->spriteoffset = (fixed_t*)DoomLib::Z_Malloc (::g->numspritelumps*sizeof(fixed_t), PU_STATIC, 0);
+    ::g->spritetopoffset = (fixed_t*)DoomLib::Z_Malloc (::g->numspritelumps*sizeof(fixed_t), PU_STATIC, 0);
 	
     for (i=0 ; i< ::g->numspritelumps ; i++)
     {
