@@ -58,9 +58,9 @@ __________________________
 
 Minimum system requirements:
 
-	CPU: 2 GHz Intel compatible
+	CPU: 2 GHz
 	System Memory: 512MB
-	Graphics card: Any graphics card that supports Direct3D 10 and OpenGL >= 3.2
+	Graphics card: OpenGL >= 3.2 ( and Direct3D 10 for Windows. )
 
 Recommended system requirements:
 
@@ -243,10 +243,10 @@ ___________________________________________________
 11) KNOWN ISSUES
 __________________________________________
 
-	* Doomclassic is not supported on Linux (yet)
-	* There are some issues with the binary format loaders/writers on 64 bit platforms
-	* The intel open source drivers to not support OpenGL 3.2 yet
-
+	* Doom II on Linux (x86_64) runs inside gdb, but segfaults outside. (WTF?)
+	* ClassicDoom only has surround sound and music on Windows.
+	* There may be some issues with the binary format loaders/writers on 64 bit platforms.
+	* Open source OpenGL drivers do not support OpenGL 3.2 (yet).
 
 ___________________________________________________
 
