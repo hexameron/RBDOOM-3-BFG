@@ -76,7 +76,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "doomtype.h"
 #include "d_main.h"
 
-bool		Music_initialized = false;
+qboolean	Music_initialized = false;
+qboolean	Sound_initialized = false;
 
 /* The number of internal mixing channels,
   the samples calculated for each mixing step,
@@ -85,7 +86,7 @@ bool		Music_initialized = false;
 
 
 // Needed for calling the actual sound output.
-static int SAMPLECOUNT = 512;
+static int SAMPLECOUNT;
 #define NUM_CHANNELS	8
 #define SAMPLERATE	11025 // Hz
 
@@ -452,7 +453,7 @@ void I_StopSound (int handle, int player)
 int I_SoundIsPlaying(int handle)
 {
     // Ouch.
-    return 1; // gametic < handle;
+    return 0; // gametic < handle;
 }
 
 void I_UpdateSound( void ){}
@@ -580,11 +581,11 @@ I_UpdateSoundParams
   handle = vol = sep = pitch = 0;
 }
 
-
 void I_ShutdownSound(void)
-{    
+{
   I_ShutdownMusic();
   SDL_CloseAudio();
+  Sound_initialized = false;
 }
 
 static SDL_AudioSpec audio;
@@ -593,9 +594,14 @@ void
 I_InitSound()
 { 
   int i;
-  
+
+  if ( Sound_initialized == true ){
+	return;
+  }
   // Secure and configure sound device first.
   fprintf( stderr, "I_InitSound: ");
+  Sound_initialized = true;
+  SAMPLECOUNT = 512;
   
   // Open the audio device
   audio.freq = SAMPLERATE;
@@ -616,8 +622,6 @@ I_InitSound()
 
     
   // Initialize external data (all sounds) at start, keep static.
-  fprintf( stderr, "I_InitSound: ");
-  
   for (i=1 ; i<NUMSFX ; i++)
   { 
     // Alias? Example is the chaingun sound linked to pistol.
@@ -633,14 +637,9 @@ I_InitSound()
       lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
     }
   }
-
-  fprintf( stderr, " pre-cached all sound data\n");
   
-//    I_InitMusic();
-  
-  // Finished initialization.
-  fprintf(stderr, "I_InitSound: sound module ready\n");
   SDL_PauseAudio(0);
+  I_InitMusic();
 }
 
 void I_SubmitSound(void){}
