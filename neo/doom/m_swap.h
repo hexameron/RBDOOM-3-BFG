@@ -60,7 +60,7 @@ inline unsigned int SwapLONG( unsigned int x)
 
 // Swap 32 bit and cast to 16 bit
 inline unsigned short SwapSHORTEN( unsigned int x)
-}
+{
 	(x>>24) | ((x>>8) & 0xff00);
 }
 

@@ -59,14 +59,10 @@ If you have questions concerning this license or the applicable additional terms
 #include <math.h>
 #include <unistd.h>
 
-#include "SDL_audio.h"
-#include "SDL_mutex.h"
-#include "SDL_byteorder.h"
-#include "SDL_version.h"
-
-#ifdef HAVE_MIXER
-#include "SDL_mixer.h"
-#endif
+#include <SDL/SDL_audio.h>
+#include <SDL/SDL_mutex.h>
+#include <SDL/SDL_byteorder.h>
+#include <SDL/SDL_version.h>
 
 #include "z_zone.h"
 #include "m_swap.h"
@@ -79,6 +75,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "doomstat.h"
 #include "doomtype.h"
 #include "d_main.h"
+
+#include "../libs/timidity/timidity.h"
 
 qboolean	Music_initialized = false;
 qboolean	Sound_initialized = false;
@@ -140,6 +138,11 @@ int		snd_SfxVolume = 12; // goes upto 15
 // Hardware left and right channel volume lookup.
 int		channelleftvol[NUM_CHANNELS];
 int		channelrightvol[NUM_CHANNELS];
+
+// Timidity
+byte*		musicBuffer = NULL;
+int		totalBufferSize;
+
 
 //
 // This function loads the sound data from the WAD lump,
@@ -224,7 +227,7 @@ addsfx
  
     int		i;
     int		rc = -1;
-    
+
     int		oldest;
     int		oldestnum = 0;
     int		slot;
@@ -233,9 +236,8 @@ addsfx
     int		leftvol;
 
     int		gametic = I_GetTime();
-	
+
     oldest = gametic;
-    // Chainsaw troubles.
     // Play these sound effects only one at a time.
     if ( sfxid == sfx_sawup
 	 || sfxid == sfx_sawidl
@@ -244,36 +246,21 @@ addsfx
 	 || sfxid == sfx_stnmov
 	 || sfxid == sfx_pistol	 )
     {
-	// Loop all channels, check.
-	for (i=0 ; i<NUM_CHANNELS ; i++)
+	i = 0; // use first slot only for these.
+    } else {
+	// Loop all channels to find oldest SFX.
+	for ( i = 1; (i<NUM_CHANNELS) && (channels[i]); i++)
 	{
-	    // Active, and using the same SFX?
-	    if ( (channels[i])
-		 && (channelids[i] == sfxid) )
-	    {
-		// Reset.
-		channels[i] = 0;
-		// We are sure that iff,
-		//  there will only be one.
-		break;
-	    }
+		if (channelstart[i] < oldest)
+		{
+			oldestnum = i;
+			oldest = channelstart[i];
+		}
 	}
     }
 
-    // Loop all channels to find oldest SFX.
-    for (i=0; (i<NUM_CHANNELS) && (channels[i]); i++)
-    {
-	if (channelstart[i] < oldest)
-	{
-	    oldestnum = i;
-	    oldest = channelstart[i];
-	}
-    }
-
-    // Tales from the cryptic.
     // If we found a channel, fine.
-    // If not, we simply overwrite the first one, 0.
-    // Probably only happens at startup.
+    // If not, we simply overwrite the first one.
     if (i == NUM_CHANNELS)
 	slot = oldestnum;
     else
@@ -303,8 +290,8 @@ addsfx
     channelstart[slot] = gametic;
 
     // Separation, that is, orientation/stereo.
-    //  range is: 1 - 256
-    seperation += 1;
+    //  range is: 128-n to 128+n
+    //  Testing suggests 64 < n < 80
 
     // Per left/right channel.
     //  x^2 seperation,
@@ -312,11 +299,10 @@ addsfx
 
     //  snd_SfxVolume is 1-16, but we need (volume*8) or less
     volume = (volume * snd_SfxVolume) >> 1;
-    leftvol =
-	volume - ((volume*seperation*seperation) >> 16); ///(256*256);
-    seperation = seperation - 257;
-    rightvol =
-	volume - ((volume*seperation*seperation) >> 16);	
+
+    leftvol = volume - ( (volume*seperation*seperation) >> 16);
+    seperation = 257 - seperation;
+    rightvol = volume - ( (volume*seperation*seperation) >> 16);
 
     // Sanity check, clamp volume.
     if (rightvol < 0 || rightvol > 127)
@@ -332,7 +318,6 @@ addsfx
     //  e.g. for avoiding duplicates of chainsaw.
     channelids[slot] = sfxid;
 
-    // You tell me.
     return rc;
 }
 
@@ -375,10 +360,8 @@ void I_SetSfxVolume(int volume)
     snd_SfxVolume = volume + 1;
 }
 
-//
 // Retrieve the raw data lump index
 //  for a given SFX name.
-//
 int I_GetSfxLumpNum(sfxinfo_t* sfx)
 {
     char namebuf[9];
@@ -386,29 +369,54 @@ int I_GetSfxLumpNum(sfxinfo_t* sfx)
     return W_GetNumForName(namebuf);
 }
 
-//
 // Starting a sound means adding it
 //  to the current list of active sounds
 //  in the internal channels.
-// As the SFX info struct contains
-//  e.g. a pointer to the raw data,
-//  it is ignored.
 // As our sound handling does not handle
 //  priority, it is ignored.
 // Pitching (that is, increased speed of playback)
 //  is set, but currently not used by mixing.
-//
-//int I_StartSound ( int	id, int	vol,  int sep,  int pitch,  int priority ){
-int I_StartSound ( int id, mobj_t *origin, mobj_t *listener_origin, int vol, int pitch, int priority ) {
-  // UNUSED
-  priority = 0;
-  
-    // Returns a handle (not used).
-    SDL_LockAudio();
-    id = addsfx( id, vol, steptable[pitch], 128 );
-    SDL_UnlockAudio();
 
-    return id;
+int I_StartSound ( int id, mobj_t *origin, mobj_t *listener, int vol, int pitch, int priority ) {
+	priority = 0;
+	float to_x, to_y;
+	float cos_x, sin_y;
+	float sound_x, sound_y;
+
+	int seperation = 128;
+	angle_t pAngle;
+
+	if (listener && origin)
+	{
+		pAngle = listener->angle >> ANGLETOFINESHIFT;
+
+		to_x = (float)(origin->x - listener->x);
+		to_y = (float)(origin->y - listener->y);
+		cos_x = (float)(finecosine[pAngle]);
+		sin_y = (float)(finesine[pAngle]);
+
+		sound_x = to_x * cos_x + to_y *sin_y;
+		sound_y = to_x * sin_y - to_y *cos_x;
+
+		if ( sound_x < 0 )
+			{ sound_x = - sound_x; }
+		sound_x += 10;  // avoid divide by zero.
+
+		if ( sound_y < -sound_x )
+			{ seperation -= 80; }
+		if ( sound_y > sound_x )
+			{ seperation += 80; }
+		if ( seperation == 128 )
+			{ seperation += (int)( sound_y * 80.0 / sound_x ); }
+	}
+
+// volume is calculated in i_sound.cpp
+
+	SDL_LockAudio();
+	id = addsfx( id, vol, steptable[pitch], seperation );
+	SDL_UnlockAudio();
+
+	return id;
 }
 
 
@@ -418,9 +426,6 @@ void I_StopSound (int handle, int player)
   // Would be looping all channels,
   //  tracking down the handle,
   //  an setting the channel to zero.
-  
-  // UNUSED.
-  handle = 0;
 }
 
 
@@ -483,8 +488,8 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
     //  that is 512 values for two channels.
     while (leftout < leftend)
     {
-	dl = 0;
-	dr = 0;
+	dl = 0; // *leftout;
+	dr = 0; // *rightout;
 
 	// Love thy L2 chache - made this a loop.
 	// Now more channels could be set at compile time
@@ -630,21 +635,26 @@ int Mus2Midi(unsigned char* bytes, unsigned char* out, int* len);
 
 void I_ShutdownMusic(void) 
 {
-
-Music_initialized = false;
-#ifdef HAVE_MIXER
-	Mix_CloseAudio();
-#endif
+	if ( Music_initialized == false ) return;
+	Music_initialized = false;
+	Timidity_Shutdown();
 }
+
+#define MIDI_RATE	22050
+#define MIDI_CHANNELS	2
+#define MIDI_FORMAT	AUDIO_U8
 
 void I_InitMusic(void)
 {
-#ifdef HAVE_MIXER
-	//Mix_OpenAudio(int frequency, Uint16 format, int channels, int chunksize);
-	Mix_OpenAudio(22050, AUDIO_S16LSB, 2, 4096);
+	if ( Music_initialized == true ) return;
+
 	Music_initialized = true;
-#endif
+	musicBuffer = NULL;
+
+	Timidity_Init( MIDI_RATE, MIDI_FORMAT, MIDI_CHANNELS, MIDI_RATE, "classicmusic/gravis.cfg" );
 }
+
+MidiSong* doomMusic;
 
 namespace {
 	const int MaxMidiConversionSize = 1024 * 1024;
@@ -655,39 +665,56 @@ void I_PlaySong( const char *songname, int looping)
 {
 	int length = 0;
 	idStr lumpName = "d_";
-#ifdef HAVE_MIXER
+
 	if ( !Music_initialized ) return;
+
+	if ( musicBuffer != NULL )
+	{
+		free( musicBuffer );
+		musicBuffer = NULL;
+        }
+
 
 	lumpName += static_cast< const char * >( songname );
 	unsigned char * musFile = static_cast< unsigned char * >( W_CacheLumpName( lumpName.c_str(), PU_STATIC_SHARED ) );
 
 	Mus2Midi( musFile, midiConversionBuffer, &length );
-//	Mix_FadeInMusic( (Mix_Music*)midiConversionBuffer, looping ? -1 : 0, 500);
-#endif
+
+	doomMusic = Timidity_LoadSongMem( midiConversionBuffer, length );
+
+	if ( doomMusic ) {
+		totalBufferSize = doomMusic->samples * MIDI_CHANNELS; // 8 bit
+		musicBuffer = (byte *)malloc( totalBufferSize );
+
+		Timidity_Start( doomMusic );
+
+                int	rc = 0;
+		int	offset = 0;
+		int	num_bytes = 0;
+
+                do {
+                        rc = Timidity_PlaySome( musicBuffer + offset, MIDI_RATE, &num_bytes );
+                        offset += num_bytes;
+                } while ( rc != 14 ); // RC_TUNE_END
+
+                Timidity_Stop();
+                Timidity_FreeSong( doomMusic );
+        }
+
+
 }
 
 void I_PauseSong (int handle)
 {
-#ifdef HAVE_MIXER
-//printf("Pausing song %d (pause)\n", handle);
-    Mix_PauseMusic();
-#endif
 }
 
 void I_ResumeSong (int handle)
 {
-//printf("Resuming song %d\n", handle);
-#ifdef HAVE_MIXER
-  Mix_ResumeMusic();
-#endif
 }
 
 void I_StopSong(int handle)
 {
-//printf("Stopping song %d\n", handle);
-#ifdef HAVE_MIXER
-  Mix_FadeOutMusic(500);
-#endif
+	Timidity_Stop();
 }
 
 void I_UnRegisterSong(int handle)
@@ -703,10 +730,7 @@ int I_RegisterSong(void* data, size_t len)
 
 void I_SetMusicVolume(int volume)
 {
-//printf("Setting music volume to %d\n", volume);
-#ifdef HAVE_MIXER
-  Mix_VolumeMusic(volume*8);
-#endif
+	Timidity_SetVolume(volume*40);
 }
 
 #endif // _MSC_VER not defined
