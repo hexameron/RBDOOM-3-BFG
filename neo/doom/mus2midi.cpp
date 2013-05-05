@@ -102,7 +102,15 @@ unsigned char* WriteInt(void* b, unsigned int i)
 // Format - 0(1 track only), 1(1 or more tracks, each play same time), 2(1 or more, each play seperatly)
 void Midi_CreateHeader(MidiHeaderChunk_t* header, short format, short track_count,  short division)
 {
+#if 0
 	WriteInt(header->name, 'MThd');
+#else
+	char* buffer = header->name;
+	*buffer++ = ('M');
+	*buffer++ = ('T');
+	*buffer++ = ('h');
+	*buffer++ = ('d');
+#endif
 	WriteInt(&header->length, 6);
 	WriteShort(&header->format, format);
 	WriteShort(&header->ntracks, track_count);
@@ -342,7 +350,15 @@ int Mus2Midi(unsigned char* bytes, unsigned char* out, int* len)
 	}
 
 	// Write out track header
+#if 0
 	WriteInt(midiTrackHeader.name, 'MTrk');
+#else
+	char* buffer = midiTrackHeader.name;
+	*buffer++ = ('M');
+	*buffer++ = ('T');
+	*buffer++ = ('r');
+	*buffer++ = ('k');
+#endif
 	WriteInt(&midiTrackHeader.length, out - midiTrackHeaderOut - sizeof(midiTrackHeader));
 	memcpy(midiTrackHeaderOut, &midiTrackHeader, sizeof(midiTrackHeader));
 	

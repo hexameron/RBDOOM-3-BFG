@@ -501,7 +501,7 @@ void S_ChangeMusic ( int			musicnum, int			looping )
 	if (::g->mus_playing == music)
 		return;
 
-	//I_Printf("S_ChangeMusic: Playing new track: '%s'\n", music->name);
+	I_Printf("S_ChangeMusic: Playing new track: '%s'\n", music->name);
 
 	I_PlaySong( music->name, looping );
 

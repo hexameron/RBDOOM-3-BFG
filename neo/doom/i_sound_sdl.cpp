@@ -77,6 +77,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "d_main.h"
 
 #include "../libs/timidity/timidity.h"
+#include "../libs/timidity/controls.h"
 
 qboolean	Music_initialized = false;
 qboolean	Sound_initialized = false;
@@ -86,11 +87,11 @@ qboolean	Sound_initialized = false;
   the size of the 16bit, 2 hardware channel (stereo)
   mixing buffer, and the samplerate of the raw data. */
 
-
 // Needed for calling the actual sound output.
 #define SAMPLECOUNT	512
 #define NUM_CHANNELS	8
 #define SAMPLERATE	11025 // Hz
+// SFX are at 11025, but could use 22050 for "better" music
 
 // The actual lengths of all sound effects.
 int	lengths[NUMSFX];
@@ -103,11 +104,9 @@ unsigned int	channelstep[NUM_CHANNELS];
 // ... and a 0.16 bit remainder of last step.
 unsigned int	channelstepremainder[NUM_CHANNELS];
 
-
 // The channel data pointers, start and end.
 unsigned char*	channels[NUM_CHANNELS];
 unsigned char*	channelsend[NUM_CHANNELS];
-
 
 // Time/gametic that the channel started playing,
 //  used to determine oldest, which automatically
@@ -133,7 +132,8 @@ int		steptable[256];
 int		vol_lookup[128*256];
 
 // Set initial Volume.
-int		snd_SfxVolume = 12; // goes upto 15
+int		snd_SfxVolume = 12; // goes upto 16
+int		snd_MusVolume = 32*256; // goes upto 60*256
 
 // Hardware left and right channel volume lookup.
 int		channelleftvol[NUM_CHANNELS];
@@ -142,7 +142,6 @@ int		channelrightvol[NUM_CHANNELS];
 // Timidity
 byte*		musicBuffer = NULL;
 int		totalBufferSize;
-
 
 //
 // This function loads the sound data from the WAD lump,
@@ -246,9 +245,9 @@ addsfx
 	 || sfxid == sfx_stnmov
 	 || sfxid == sfx_pistol	 )
     {
-	i = 0; // use first slot only for these.
+	i = 0; // use first slot only for those.
     } else {
-	// Loop all channels to find oldest SFX.
+	// Loop other channels to find oldest SFX.
 	for ( i = 1; (i<NUM_CHANNELS) && (channels[i]); i++)
 	{
 		if (channelstart[i] < oldest)
@@ -315,12 +314,10 @@ addsfx
     channelrightvol[slot] = rightvol*256;
 
     // Preserve sound SFX id,
-    //  e.g. for avoiding duplicates of chainsaw.
     channelids[slot] = sfxid;
 
     return rc;
 }
-
 
 void I_SetChannels()
 {
@@ -343,7 +340,6 @@ void I_SetChannels()
   for (i=-128 ; i<128 ; i++)
     steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
   
-  
   // Generates volume lookup tables
   //  which also turn the unsigned samples
   //  into signed samples.
@@ -353,7 +349,6 @@ void I_SetChannels()
     }
 }	
 
- 
 void I_SetSfxVolume(int volume)
 {
     //volume in is 0-15, use 1-16.
@@ -451,6 +446,7 @@ void I_UpdateSound( void ){}
 //
 
 static SDL_AudioSpec audio;
+intptr_t midiptr = 0;
 
 // SDL callback
 void I_UpdateSound(void *unused, Uint8 *stream, int len)
@@ -488,10 +484,21 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
     //  that is 512 values for two channels.
     while (leftout < leftend)
     {
-	dl = 0; // *leftout;
-	dr = 0; // *rightout;
+	dl = 0;
+	dr = 0;
 
-	// Love thy L2 chache - made this a loop.
+	if (musicBuffer)
+	{
+		// mix in music
+		sample = *(unsigned char *)( musicBuffer + midiptr++ );
+		dl += vol_lookup[ snd_MusVolume + sample ];
+		sample = *(unsigned char *)( musicBuffer + midiptr++ );
+		dr += vol_lookup[ snd_MusVolume + sample ];
+		if ( midiptr >= totalBufferSize )
+			{ midiptr = 0; }
+	}
+
+	// Love thy L2 cache - made this a loop.
 	// Now more channels could be set at compile time
 	//  as well. Thus loop those  channels.
 	for ( chan = 0; chan < NUM_CHANNELS; chan++ )
@@ -637,21 +644,35 @@ void I_ShutdownMusic(void)
 {
 	if ( Music_initialized == false ) return;
 	Music_initialized = false;
+
+	if ( musicBuffer != NULL )
+	{
+		free( musicBuffer );
+		musicBuffer = NULL;
+	}
+
 	Timidity_Shutdown();
 }
 
-#define MIDI_RATE	22050
+#define MIDI_RATE	11025
 #define MIDI_CHANNELS	2
 #define MIDI_FORMAT	AUDIO_U8
+#define BYTESPERSAMPLE  1
 
 void I_InitMusic(void)
 {
+	int err;
 	if ( Music_initialized == true ) return;
 
 	Music_initialized = true;
 	musicBuffer = NULL;
+	midiptr = 0;
 
-	Timidity_Init( MIDI_RATE, MIDI_FORMAT, MIDI_CHANNELS, MIDI_RATE, "classicmusic/gravis.cfg" );
+	err = Timidity_Init( MIDI_RATE, MIDI_FORMAT, MIDI_CHANNELS, MIDI_RATE, "classicmusic/gravis.cfg" );
+	if ( err < 0 )
+	{
+		I_Printf("Timidity_Init Error: %d\n",err);
+	}
 }
 
 MidiSong* doomMusic;
@@ -668,8 +689,10 @@ void I_PlaySong( const char *songname, int looping)
 
 	if ( !Music_initialized ) return;
 
+	// Lock SDL ?
 	if ( musicBuffer != NULL )
 	{
+		I_Printf("Freeing old music Buffer.\n");
 		free( musicBuffer );
 		musicBuffer = NULL;
         }
@@ -680,11 +703,14 @@ void I_PlaySong( const char *songname, int looping)
 
 	Mus2Midi( musFile, midiConversionBuffer, &length );
 
+	I_Printf( "Converted Midi file:%d bytes.\n", length );
+
 	doomMusic = Timidity_LoadSongMem( midiConversionBuffer, length );
 
 	if ( doomMusic ) {
-		totalBufferSize = doomMusic->samples * MIDI_CHANNELS; // 8 bit
+		totalBufferSize = doomMusic->samples * MIDI_CHANNELS * BYTESPERSAMPLE;
 		musicBuffer = (byte *)malloc( totalBufferSize );
+		midiptr = 0;
 
 		Timidity_Start( doomMusic );
 
@@ -695,11 +721,11 @@ void I_PlaySong( const char *songname, int looping)
                 do {
                         rc = Timidity_PlaySome( musicBuffer + offset, MIDI_RATE, &num_bytes );
                         offset += num_bytes;
-                } while ( rc != 14 ); // RC_TUNE_END
+                } while ( rc != RC_TUNE_END );
 
                 Timidity_Stop();
                 Timidity_FreeSong( doomMusic );
-        }
+	}
 
 
 }
@@ -714,7 +740,12 @@ void I_ResumeSong (int handle)
 
 void I_StopSong(int handle)
 {
-	Timidity_Stop();
+	midiptr = 0;
+	if ( musicBuffer != NULL )
+	{
+		free( musicBuffer );
+		musicBuffer = NULL;
+	}
 }
 
 void I_UnRegisterSong(int handle)
@@ -730,7 +761,8 @@ int I_RegisterSong(void* data, size_t len)
 
 void I_SetMusicVolume(int volume)
 {
-	Timidity_SetVolume(volume*40);
+	snd_MusVolume = volume << 10;
+	// given 0-15, return 0-60*256
 }
 
 #endif // _MSC_VER not defined
