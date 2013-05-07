@@ -131,19 +131,21 @@ int		steptable[256];
 
 // Volume lookups.
 int		vol_lookup[128*256];
-int		musvol_lookup[16*4096];
+int		musvol_offset = 0;
 
 // Set initial Volume.
 int		snd_SfxVolume = 12; // goes upto 16
-int		snd_MusVolume = 8*4096; // goes upto 15*4096
+int		snd_MusVolume = 0; // goes upto 15
 
 // Hardware left and right channel volume lookup.
 int		channelleftvol[NUM_CHANNELS];
 int		channelrightvol[NUM_CHANNELS];
 
 // Timidity
-byte*		musicBuffer = NULL;
-int		totalBufferSize;
+unsigned short*	musicBuffer = NULL;
+unsigned short*	musicBufferEnd = NULL;
+unsigned short*	musicptr = NULL;
+intptr_t	totalBufferSize;
 
 //
 // This function loads the sound data from the WAD lump,
@@ -247,6 +249,8 @@ addsfx
 	 || sfxid == sfx_pistol	 )
     {
 	i = 0; // use first slot only for those.
+		// Win32 code plays the loudest Chainsaw.
+		// Pistol ( Chaingun ) should be in another slot
     } else {
 	// Loop other channels to find oldest SFX.
 	for ( i = 1; (i<NUM_CHANNELS) && (channels[i]); i++)
@@ -350,12 +354,6 @@ void I_SetChannels()
       vol_lookup[i*256+j] = i * (j-128) * 2;
       // maximum volume is less than limit.
     }
-
-  // music uses 12 of 16 bits with 4bit volume,
-  // reduced to 15 bits.
-  for (i=0 ; i<16 ; i++)
-    for (j=0 ; j<4096 ; j++)
-      musvol_lookup[i*4096+j] = ( (i+1)*(j-2048) ) >> 1;
 }	
 
 void I_SetSfxVolume(int volume)
@@ -453,7 +451,6 @@ void I_UpdateSound( void ){}
 //
 
 static SDL_AudioSpec audio;
-intptr_t midiptr = 0;
 
 // SDL callback
 void I_UpdateSound(void *unused, Uint8 *stream, int len)
@@ -461,7 +458,7 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
   // Mix current sound data.
   // Data, from raw sound, for right and left.
   unsigned char	sample;
-  unsigned short msample;
+  int msample;
   register int		dl;
   register int		dr;
   int	templ, tempr;
@@ -537,14 +534,12 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
 	if (musicBuffer)
 	{
 		// mix in music
-		msample = *(unsigned short *)( musicBuffer + midiptr );
-		midiptr += 2;
-		dl += musvol_lookup[ snd_MusVolume + (msample >> 4) ];
-		msample = *(unsigned short *)( musicBuffer + midiptr );
-		midiptr += 2;
-		dr += musvol_lookup[ snd_MusVolume + (msample >> 4) ];
-		if ( midiptr >= totalBufferSize )
-			{ midiptr = 0; }
+		msample = (int)*( musicptr++ );
+		dl += ( snd_MusVolume * msample - musvol_offset ) >> 5;
+		msample = (int)*( musicptr++ );
+		dr += ( snd_MusVolume * msample - musvol_offset ) >> 5;;
+		if ( musicptr >= musicBufferEnd )
+			{ musicptr = musicBuffer; }
 	}
 
 	// Clamp to range. Left hardware channel.
@@ -662,10 +657,11 @@ void I_ShutdownMusic(void)
 
 	if ( musicBuffer != NULL )
 	{
+		SDL_LockAudio();
 		free( musicBuffer );
 		musicBuffer = NULL;
+		SDL_UnlockAudio();
 	}
-
 	Timidity_Shutdown();
 }
 
@@ -680,8 +676,6 @@ void I_InitMusic(void)
 	if ( Music_initialized == true ) return;
 
 	Music_initialized = true;
-	musicBuffer = NULL;
-	midiptr = 0;
 
 	err = Timidity_Init( MIDI_RATE, MIDI_FORMAT, MIDI_CHANNELS, MIDI_RATE, "classicmusic/gravis.cfg" );
 	if ( err < 0 )
@@ -704,12 +698,12 @@ void I_PlaySong( const char *songname, int looping)
 
 	if ( !Music_initialized ) return;
 
-	// Lock SDL ?
 	if ( musicBuffer != NULL )
 	{
-		I_Printf("Freeing old music Buffer.\n");
+		SDL_LockAudio();
 		free( musicBuffer );
 		musicBuffer = NULL;
+		SDL_UnlockAudio();
         }
 
 
@@ -724,8 +718,7 @@ void I_PlaySong( const char *songname, int looping)
 
 	if ( doomMusic ) {
 		totalBufferSize = doomMusic->samples * MIDI_CHANNELS * BYTESPERSAMPLE;
-		musicBuffer = (byte *)malloc( totalBufferSize );
-		midiptr = 0;
+		musicptr = (unsigned short *)malloc( totalBufferSize );
 
 		Timidity_Start( doomMusic );
 
@@ -734,15 +727,17 @@ void I_PlaySong( const char *songname, int looping)
 		int	num_bytes = 0;
 
                 do {
-                        rc = Timidity_PlaySome( musicBuffer + offset, MIDI_RATE, &num_bytes );
+                        rc = Timidity_PlaySome( (byte *)musicptr + offset, MIDI_RATE, &num_bytes );
                         offset += num_bytes;
                 } while ( rc != RC_TUNE_END );
+
+		// music will start playing as soon as musicBuffer is set
+		musicBufferEnd = musicptr + ( totalBufferSize >> 1 );
+		musicBuffer = musicptr;
 
                 Timidity_Stop();
                 Timidity_FreeSong( doomMusic );
 	}
-
-
 }
 
 void I_PauseSong (int handle)
@@ -755,11 +750,12 @@ void I_ResumeSong (int handle)
 
 void I_StopSong(int handle)
 {
-	midiptr = 0;
 	if ( musicBuffer != NULL )
 	{
+		SDL_LockAudio();
 		free( musicBuffer );
 		musicBuffer = NULL;
+		SDL_UnlockAudio();
 	}
 }
 
@@ -776,8 +772,8 @@ int I_RegisterSong(void* data, size_t len)
 
 void I_SetMusicVolume(int volume)
 {
-	snd_MusVolume = volume << 12;
-	// 12 bits data, top 4 bits volume.
+	snd_MusVolume = volume + 1;
+	musvol_offset = snd_MusVolume * 0x8000;
 }
 
 #endif // _MSC_VER not defined
