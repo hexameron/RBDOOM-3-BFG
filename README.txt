@@ -243,7 +243,6 @@ ___________________________________________________
 11) KNOWN ISSUES
 __________________________________________
 
-	* ClassicDoom only has surround sound and music on Windows.
 	* There may be some issues with the binary format loaders/writers on 64 bit platforms.
 	* Open source OpenGL drivers do not support OpenGL 3.2 (yet).
 

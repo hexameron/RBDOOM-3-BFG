@@ -88,10 +88,10 @@ qboolean	Sound_initialized = false;
   mixing buffer, and the samplerate of the raw data. */
 
 // Needed for calling the actual sound output.
-#define SAMPLECOUNT	512
+#define SAMPLECOUNT	1024
 #define NUM_CHANNELS	8
-#define SAMPLERATE	11025 // Hz
-// SFX are at 11025, but could use 22050 for "better" music
+#define SAMPLERATE	22050 // Hz
+// SFX are at 11025, but we double-up to 22050 for "better" music
 
 // The actual lengths of all sound effects.
 int	lengths[NUMSFX];
@@ -103,6 +103,7 @@ int	audio_fd;
 unsigned int	channelstep[NUM_CHANNELS];
 // ... and a 0.16 bit remainder of last step.
 unsigned int	channelstepremainder[NUM_CHANNELS];
+
 
 // The channel data pointers, start and end.
 unsigned char*	channels[NUM_CHANNELS];
@@ -130,10 +131,11 @@ int		steptable[256];
 
 // Volume lookups.
 int		vol_lookup[128*256];
+int		musvol_lookup[16*4096];
 
 // Set initial Volume.
 int		snd_SfxVolume = 12; // goes upto 16
-int		snd_MusVolume = 32*256; // goes upto 60*256
+int		snd_MusVolume = 8*4096; // goes upto 15*4096
 
 // Hardware left and right channel volume lookup.
 int		channelleftvol[NUM_CHANNELS];
@@ -183,9 +185,8 @@ getsfx
 
     sfx = (unsigned char*)W_CacheLumpNum(sfxlump, PU_CACHE_SHARED );
 
-    // Pads the sound effect out to the mixing buffer size.
-    // The original realloc would interfere with zone memory.
-    paddedsize = ((size-8 + (SAMPLECOUNT-1)) / SAMPLECOUNT) * SAMPLECOUNT;
+    // Playback pitch changes, so sample padding is pointless.
+    paddedsize = size;
 
     // Allocate from zone memory.
     paddedsfx = (unsigned char*)Z_Malloc( paddedsize+8, PU_STATIC, 0 );
@@ -319,6 +320,7 @@ addsfx
     return rc;
 }
 
+
 void I_SetChannels()
 {
   // Init internal lookups (raw data, mixing buffer, channels).
@@ -345,8 +347,15 @@ void I_SetChannels()
   //  into signed samples.
   for (i=0 ; i<128 ; i++)
     for (j=0 ; j<256 ; j++) {
-      vol_lookup[i*256+j] = (i*(j-128)*256)/127;
+      vol_lookup[i*256+j] = i * (j-128) * 2;
+      // maximum volume is less than limit.
     }
+
+  // music uses 12 of 16 bits with 4bit volume,
+  // reduced to 15 bits.
+  for (i=0 ; i<16 ; i++)
+    for (j=0 ; j<4096 ; j++)
+      musvol_lookup[i*4096+j] = ( (i+1)*(j-2048) ) >> 1;
 }	
 
 void I_SetSfxVolume(int volume)
@@ -414,7 +423,6 @@ int I_StartSound ( int id, mobj_t *origin, mobj_t *listener, int vol, int pitch,
 	return id;
 }
 
-
 void I_StopSound (int handle, int player)
 {
   // You need the handle returned by StartSound.
@@ -422,7 +430,6 @@ void I_StopSound (int handle, int player)
   //  tracking down the handle,
   //  an setting the channel to zero.
 }
-
 
 int I_SoundIsPlaying(int handle)
 {
@@ -454,9 +461,12 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
   // Mix current sound data.
   // Data, from raw sound, for right and left.
   unsigned char	sample;
+  unsigned short msample;
   register int		dl;
   register int		dr;
-  
+  int	templ, tempr;
+  qboolean noskipbit;
+
   signed short*		leftout;
   signed short*		rightout;
   signed short*		leftend;
@@ -474,6 +484,7 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
     leftout = (signed short *)stream;
     rightout = ((signed short *)stream)+1;
     step = 2;
+    noskipbit = false;
 
     // Determine end, for left channel only
     //  (right channel is implicit).
@@ -487,21 +498,11 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
 	dl = 0;
 	dr = 0;
 
-	if (musicBuffer)
-	{
-		// mix in music
-		sample = *(unsigned char *)( musicBuffer + midiptr++ );
-		dl += vol_lookup[ snd_MusVolume + sample ];
-		sample = *(unsigned char *)( musicBuffer + midiptr++ );
-		dr += vol_lookup[ snd_MusVolume + sample ];
-		if ( midiptr >= totalBufferSize )
-			{ midiptr = 0; }
-	}
-
+	noskipbit = !noskipbit;
 	// Love thy L2 cache - made this a loop.
 	// Now more channels could be set at compile time
 	//  as well. Thus loop those  channels.
-	for ( chan = 0; chan < NUM_CHANNELS; chan++ )
+	if (noskipbit) for ( chan = 0; chan < NUM_CHANNELS; chan++ )
 	{
 	    // Check channel, if active.
 	    if (channels[ chan ])
@@ -520,19 +521,33 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
 		channels[ chan ] += channelstepremainder[ chan ] >> 16;
 		// Limit to LSB???
 		channelstepremainder[ chan ] &= 65536-1;
-
 		// Check whether we are done.
 		if (channels[ chan ] >= channelsend[ chan ])
 		    channels[ chan ] = 0;
 	    }
+	    // preserve values for "skipped" loop
+	    templ = dl;
+	    tempr = dr;
+	} else {
+	    // loop skipped, copy last values
+	    dl = templ;
+	    dr = tempr;
+	}
+
+	if (musicBuffer)
+	{
+		// mix in music
+		msample = *(unsigned short *)( musicBuffer + midiptr );
+		midiptr += 2;
+		dl += musvol_lookup[ snd_MusVolume + (msample >> 4) ];
+		msample = *(unsigned short *)( musicBuffer + midiptr );
+		midiptr += 2;
+		dr += musvol_lookup[ snd_MusVolume + (msample >> 4) ];
+		if ( midiptr >= totalBufferSize )
+			{ midiptr = 0; }
 	}
 
 	// Clamp to range. Left hardware channel.
-	// Has been char instead of short.
-	// if (dl > 127) *leftout = 127;
-	// else if (dl < -128) *leftout = -128;
-	// else *leftout = dl;
-
 	if (dl > 0x7fff)
 	    *leftout = 0x7fff;
 	else if (dl < -0x8000)
@@ -654,10 +669,10 @@ void I_ShutdownMusic(void)
 	Timidity_Shutdown();
 }
 
-#define MIDI_RATE	11025
+#define MIDI_RATE	22050
 #define MIDI_CHANNELS	2
-#define MIDI_FORMAT	AUDIO_U8
-#define BYTESPERSAMPLE  1
+#define MIDI_FORMAT	AUDIO_U16
+#define BYTESPERSAMPLE  2
 
 void I_InitMusic(void)
 {
@@ -761,8 +776,8 @@ int I_RegisterSong(void* data, size_t len)
 
 void I_SetMusicVolume(int volume)
 {
-	snd_MusVolume = volume << 10;
-	// given 0-15, return 0-60*256
+	snd_MusVolume = volume << 12;
+	// 12 bits data, top 4 bits volume.
 }
 
 #endif // _MSC_VER not defined
