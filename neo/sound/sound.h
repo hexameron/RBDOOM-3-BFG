@@ -42,7 +42,7 @@ If you have questions concerning this license or the applicable additional terms
 const float DOOM_TO_METERS = 0.0254f;					// doom to meters
 const float METERS_TO_DOOM = ( 1.0f / DOOM_TO_METERS );	// meters to doom
 
-const float DB_SILENCE = -60.0f;
+const float DB_SILENCE = -96.0f;
 
 class idSoundSample;
 
