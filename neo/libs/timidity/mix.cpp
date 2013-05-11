@@ -432,11 +432,10 @@ static void ramp_out(sample_t *sp,  int32_t *lp, int v,  int32_t c)
 
 	sample_t s=0; /* silly warning about uninitialized s */
 
-	/* Fix by James Caldwell */
-	if ( c == 0 ) c = 1;
+	if ( c == 0 ) return;
 
 	left=voice[v].left_mix;
-	li=-(left/c);
+	li=-left/(c+1);
 	if (!li) li=-1;
 
 	/* I_Printf("Ramping out: left=%d, c=%d, li=%d\n", left, c, li); */
@@ -446,7 +445,7 @@ static void ramp_out(sample_t *sp,  int32_t *lp, int v,  int32_t c)
 		if (voice[v].panned==PANNED_MYSTERY)
 		{
 			right=voice[v].right_mix;
-			ri=-(right/c);
+			ri=-right/(c+1);
 			while (c--)
 			{
 				left += li;
@@ -520,6 +519,7 @@ void mix_voice( int32_t *buf, int v,  int32_t c)
 	sample_t *sp;
 	if (vp->status==VOICE_DIE)
 	{
+		c++;
 		if (c>=MAX_DIE_TIME)
 			c=MAX_DIE_TIME;
 		sp=resample_voice(v, &c);
@@ -563,6 +563,7 @@ void mix_voice( int32_t *buf, int v,  int32_t c)
 					mix_single_signal(sp, buf, v, c);
 				else 
 					mix_single(sp, buf, v, c);
+				if (vp->panned == PANNED_LEFT) buf++;
 			}
 		}
 	}
