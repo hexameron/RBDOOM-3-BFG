@@ -537,12 +537,16 @@ fail:
 		sp->loop_start <<= FRACTION_BITS;
 		sp->loop_end <<= FRACTION_BITS;
 
+
+#if 0
+// TODO: FIXME
 		/* Adjust for fractional loop points. This is a guess. Does anyone
 		know what "fractions" really stands for? */
 		sp->loop_start |=
 			(fractions & 0x0F) << (FRACTION_BITS-4);
 		sp->loop_end |=
 			((fractions>>4) & 0x0F) << (FRACTION_BITS-4);
+#endif
 
 		/* If this instrument will always be played on the same note,
 		and it's not looped, we can resample it now. */
