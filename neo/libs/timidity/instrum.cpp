@@ -436,7 +436,7 @@ fail:
 		}
 
 		/* Then read the sample data */
-		sp->data = (sample_t*)safe_malloc(sp->data_length);
+		sp->data = (sample_t*)safe_malloc(sp->data_length + 2*sizeof(uint16_t));
 		if ( static_cast< size_t >( sp->data_length ) != fp->Read(sp->data, sp->data_length ))
 			goto fail;
 
@@ -532,21 +532,26 @@ fail:
 		sp->loop_start /= 2;
 		sp->loop_end /= 2;
 
+
+		/* The sample must be padded out by 2 extra sample, so that
+		round off errors in the offsets used in interpolation will not
+		cause a "pop" by reading random data beyond data_length */
+		sp->data[sp->data_length] = sp->data[sp->data_length + 1] = 0;
+
 		/* Then fractional samples */
 		sp->data_length <<= FRACTION_BITS;
 		sp->loop_start <<= FRACTION_BITS;
 		sp->loop_end <<= FRACTION_BITS;
 
-
-#if 0
-// TODO: FIXME
 		/* Adjust for fractional loop points. This is a guess. Does anyone
 		know what "fractions" really stands for? */
+
+		/* Seems harmless: the Doom samples with loop-points closest
+		to data-length do not have fractions. */
 		sp->loop_start |=
 			(fractions & 0x0F) << (FRACTION_BITS-4);
 		sp->loop_end |=
 			((fractions>>4) & 0x0F) << (FRACTION_BITS-4);
-#endif
 
 		/* If this instrument will always be played on the same note,
 		and it's not looped, we can resample it now. */
