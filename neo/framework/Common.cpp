@@ -1215,9 +1215,10 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 		{
 			idLib::Printf( "Skipping Intro Videos!\n" );
 		}
+
 		RenderSplash();
+		game->Shell_Show( true );
 		RenderSplash();
-		RenderSplash();	
 		
 		declManager->Init2();
 		
@@ -1347,7 +1348,7 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 			}
 		}
 		
-		Printf( "--- Common Initialization Complete ---\n" );
+		DPrintf( "--- Common Initialization Complete ---\n" );
 		
 		idLib::Printf( "QA Timing IIS: %06dms\n", Sys_Milliseconds() );
 	}
@@ -1373,11 +1374,11 @@ void idCommonLocal::Shutdown()
 	
 	
 	// Kill any pending saves...
-	printf( "session->GetSaveGameManager().CancelToTerminate();\n" );
+	DPrintf( "session->GetSaveGameManager().CancelToTerminate();\n" );
 	session->GetSaveGameManager().CancelToTerminate();
 	
 	// kill sound first
-	printf( "soundSystem->StopAllSounds();\n" );
+	DPrintf( "soundSystem->StopAllSounds();\n" );
 	soundSystem->StopAllSounds();
 	
 	// shutdown the script debugger
@@ -1389,115 +1390,115 @@ void idCommonLocal::Shutdown()
 		EndAVICapture();
 	}
 	
-	printf( "Stop();\n" );
+	DPrintf( "Stop();\n" );
 	Stop();
 	
-	printf( "CleanupShell();\n" );
+	DPrintf( "CleanupShell();\n" );
 	CleanupShell();
 	
-	printf( "delete loadGUI;\n" );
+	DPrintf( "delete loadGUI;\n" );
 	delete loadGUI;
 	loadGUI = NULL;
 	
-	printf( "delete renderWorld;\n" );
+	DPrintf( "delete renderWorld;\n" );
 	delete renderWorld;
 	renderWorld = NULL;
 	
-	printf( "delete soundWorld;\n" );
+	DPrintf( "delete soundWorld;\n" );
 	delete soundWorld;
 	soundWorld = NULL;
 	
-	printf( "delete menuSoundWorld;\n" );
+	DPrintf( "delete menuSoundWorld;\n" );
 	delete menuSoundWorld;
 	menuSoundWorld = NULL;
 	
 	// shut down the session
-	printf( "session->ShutdownSoundRelatedSystems();\n" );
+	DPrintf( "session->ShutdownSoundRelatedSystems();\n" );
 	session->ShutdownSoundRelatedSystems();
-	printf( "session->Shutdown();\n" );
+	DPrintf( "session->Shutdown();\n" );
 	session->Shutdown();
 	
 	// shutdown, deallocate leaderboard definitions.
 	if( game != NULL )
 	{
-		printf( "game->Leaderboards_Shutdown();\n" );
+		DPrintf( "game->Leaderboards_Shutdown();\n" );
 		game->Leaderboards_Shutdown();
 	}
 	
 	// shut down the user interfaces
-	printf( "uiManager->Shutdown();\n" );
+	DPrintf( "uiManager->Shutdown();\n" );
 	uiManager->Shutdown();
 	
 	// shut down the sound system
-	printf( "soundSystem->Shutdown();\n" );
+	DPrintf( "soundSystem->Shutdown();\n" );
 	soundSystem->Shutdown();
 	
 	// shut down the user command input code
-	printf( "usercmdGen->Shutdown();\n" );
+	DPrintf( "usercmdGen->Shutdown();\n" );
 	usercmdGen->Shutdown();
 	
 	// shut down the event loop
-	printf( "eventLoop->Shutdown();\n" );
+	DPrintf( "eventLoop->Shutdown();\n" );
 	eventLoop->Shutdown();
 	
 	// shutdown the decl manager
-	printf( "declManager->Shutdown();\n" );
+	DPrintf( "declManager->Shutdown();\n" );
 	declManager->Shutdown();
 	
 	// shut down the renderSystem
-	printf( "renderSystem->Shutdown();\n" );
+	DPrintf( "renderSystem->Shutdown();\n" );
 	renderSystem->Shutdown();
 	
-	printf( "commonDialog.Shutdown();\n" );
+	DPrintf( "commonDialog.Shutdown();\n" );
 	commonDialog.Shutdown();
 	
 	// unload the game dll
-	printf( "UnloadGameDLL();\n" );
+	DPrintf( "UnloadGameDLL();\n" );
 	UnloadGameDLL();
 	
-	printf( "saveFile.Clear( true );\n" );
+	DPrintf( "saveFile.Clear( true );\n" );
 	saveFile.Clear( true );
-	printf( "stringsFile.Clear( true );\n" );
+	DPrintf( "stringsFile.Clear( true );\n" );
 	stringsFile.Clear( true );
 	
 	// only shut down the log file after all output is done
-	printf( "CloseLogFile();\n" );
+	DPrintf( "CloseLogFile();\n" );
 	CloseLogFile();
 	
 	// shut down the file system
-	printf( "fileSystem->Shutdown( false );\n" );
+	DPrintf( "fileSystem->Shutdown( false );\n" );
 	fileSystem->Shutdown( false );
 	
 	// shut down non-portable system services
-	printf( "Sys_Shutdown();\n" );
+	DPrintf( "Sys_Shutdown();\n" );
 	Sys_Shutdown();
 	
 	// shut down the console
-	printf( "console->Shutdown();\n" );
+	DPrintf( "console->Shutdown();\n" );
 	console->Shutdown();
 	
 	// shut down the key system
-	printf( "idKeyInput::Shutdown();\n" );
+	DPrintf( "idKeyInput::Shutdown();\n" );
 	idKeyInput::Shutdown();
 	
 	// shut down the cvar system
-	printf( "cvarSystem->Shutdown();\n" );
+	DPrintf( "cvarSystem->Shutdown();\n" );
 	cvarSystem->Shutdown();
 	
 	// shut down the console command system
-	printf( "cmdSystem->Shutdown();\n" );
+	DPrintf( "cmdSystem->Shutdown();\n" );
 	cmdSystem->Shutdown();
 	
 	// free any buffered warning messages
-	printf( "ClearWarnings( GAME_NAME \" shutdown\" );\n" );
+	DPrintf( "ClearWarnings( GAME_NAME \" shutdown\" );\n" );
 	ClearWarnings( GAME_NAME " shutdown" );
-	printf( "warningCaption.Clear();\n" );
+	DPrintf( "warningCaption.Clear();\n" );
 	warningCaption.Clear();
-	printf( "errorList.Clear();\n" );
+	DPrintf( "errorList.Clear();\n" );
 	errorList.Clear();
 	
 	// shutdown idLib
-	printf( "idLib::ShutDown();\n" );
+	Printf( "idLib::ShutDown();\n" );
 	idLib::ShutDown();
 }
 
