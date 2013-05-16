@@ -545,7 +545,12 @@ void idCommonLocal::Error( const char* fmt, ... )
 	// add the message to the error list
 	errorList.AddUnique( errorMessage );
 	
+#ifdef linux
+	// Drop back to menu when timeDemo fails.
+	LeaveGame();
+#else
 	Stop();
+#endif
 	
 	if( code == ERP_DISCONNECT )
 	{
