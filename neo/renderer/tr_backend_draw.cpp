@@ -144,7 +144,7 @@ void RB_DrawElementsWithCounters( const drawSurf_t* surf )
 	}
 	else
 	{
-		const uint64 frameNum = ( vbHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
+		const vertCacheHandle_t frameNum = ( vbHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
 		if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 		{
 			idLib::Warning( "RB_DrawElementsWithCounters, vertexBuffer == NULL" );
@@ -163,7 +163,7 @@ void RB_DrawElementsWithCounters( const drawSurf_t* surf )
 	}
 	else
 	{
-		const uint64 frameNum = ( ibHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
+		const vertCacheHandle_t frameNum = ( ibHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
 		if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 		{
 			idLib::Warning( "RB_DrawElementsWithCounters, indexBuffer == NULL" );
@@ -171,9 +171,9 @@ void RB_DrawElementsWithCounters( const drawSurf_t* surf )
 		}
 		indexBuffer = &vertexCache.frameData[vertexCache.drawListNum].indexBuffer;
 	}
-	// RB: 64 bit fixes, changed int to GLintptrARB
-	const GLintptrARB indexOffset = ( GLintptrARB )( (int)( ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK );
-	// RB end
+
+	// Shift and mask 64 bits to 32, for later cast to pointer.
+	const intptr_t indexOffset = (intptr_t)( ( ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK );
 	
 	RENDERLOG_PRINTF( "Binding Buffers: %p:%i %p:%i\n", vertexBuffer, vertOffset, indexBuffer, indexOffset );
 	
@@ -1694,7 +1694,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 		}
 		else
 		{
-			const uint64 frameNum = ( vbHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
+			const vertCacheHandle_t frameNum = ( vbHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
 			if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 			{
 				idLib::Warning( "RB_DrawElementsWithCounters, vertexBuffer == NULL" );
@@ -1702,7 +1702,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 			}
 			vertexBuffer = &vertexCache.frameData[vertexCache.drawListNum].vertexBuffer;
 		}
-		const int vertOffset = ( (intptr_t)vbHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
+		const int vertOffset = (int)( ( vbHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK );
 		
 		// get index buffer
 		const vertCacheHandle_t ibHandle = drawSurf->indexCache;
@@ -1713,7 +1713,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 		}
 		else
 		{
-			const uint64 frameNum = ( ibHandle >> VERTCACHE_FRAME_SHIFT ) & (uint64)VERTCACHE_FRAME_MASK;
+			const vertCacheHandle_t frameNum = ( ibHandle >> VERTCACHE_FRAME_SHIFT ) & VERTCACHE_FRAME_MASK;
 			if( frameNum != ( ( vertexCache.currentFrame - 1 ) & VERTCACHE_FRAME_MASK ) )
 			{
 				idLib::Warning( "RB_DrawElementsWithCounters, indexBuffer == NULL" );
@@ -1721,7 +1721,7 @@ static void RB_StencilShadowPass( const drawSurf_t* drawSurfs, const viewLight_t
 			}
 			indexBuffer = &vertexCache.frameData[vertexCache.drawListNum].indexBuffer;
 		}
-		const uint64 indexOffset = ( (intptr_t)ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
+		const vertCacheHandle_t indexOffset = ( ibHandle >> VERTCACHE_OFFSET_SHIFT ) & VERTCACHE_OFFSET_MASK;
 		
 		RENDERLOG_PRINTF( "Binding Buffers: %p %p\n", vertexBuffer, indexBuffer );
 		
