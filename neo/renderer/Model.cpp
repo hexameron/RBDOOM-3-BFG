@@ -2689,6 +2689,8 @@ void idRenderModelStatic::ReadFromDemoFile( class idDemoFile* f )
 		R_AllocStaticTriSurfIndexes( tri, tri->numIndexes );
 		for( j = 0; j < tri->numIndexes; ++j )
 			f->ReadInt( ( int& )tri->indexes[j] );
+			/* Some ReadInts need sign-extending for 64bit
+				triIndex_t may be unsigned short  */
 			
 		f->ReadInt( tri->numVerts );
 		R_AllocStaticTriSurfVerts( tri, tri->numVerts );

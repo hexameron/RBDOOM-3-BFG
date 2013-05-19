@@ -100,15 +100,15 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 		return false;
 	}
 	
-	demoCommand_t	dc;
+	int	temp,	dc;
 	qhandle_t		h;
 	
-	if( !readDemo->ReadInt( ( int& )dc ) )
+	if( !readDemo->ReadInt( dc ) )
 	{
 		// a demoShot may not have an endFrame, but it is still valid
 		return false;
 	}
-	
+
 	switch( dc )
 	{
 		case DC_LOADMAP:
@@ -123,7 +123,7 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 			// the internal version value got replaced by DS_VERSION at toplevel
 			if( header.version != 4 )
 			{
-				common->Error( "Demo version mismatch.\n" );
+				common->Printf( "Demo version mismatch.\n" );
 			}
 			
 			if( r_showDemo.GetBool() )
@@ -152,10 +152,11 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 			for( int i = 0; i < MAX_GLOBAL_SHADER_PARMS; i++ )
 				readDemo->ReadFloat( renderView->shaderParms[i] );
 				
-			if( !readDemo->ReadInt( ( int& )renderView->globalMaterial ) )
+			if( !readDemo->ReadInt( temp ) )
 			{
 				return false;
 			}
+			renderView->globalMaterial = ( const idMaterial* )temp;
 			
 			if( r_showDemo.GetBool() )
 			{
@@ -214,7 +215,7 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 			int	size[3];
 			readDemo->ReadInt( size[0] );
 			readDemo->ReadInt( size[1] );
-			readDemo->ReadInt( size[2] );
+			//readDemo->ReadInt( size[2] );
 			renderSystem->CropRenderSize( size[0], size[1] );
 			break;
 			
@@ -303,7 +304,7 @@ void	idRenderWorldLocal::WriteLoadMap()
 		
 	if( r_showDemo.GetBool() )
 	{
-		common->Printf( "write DC_DELETE_LIGHTDEF: %s\n", mapName.c_str() );
+		common->Printf( "write DC_LOADMAP: %s\n", mapName.c_str() );
 	}
 }
 
@@ -327,6 +328,8 @@ void	idRenderWorldLocal::WriteVisibleDefs( const viewDef_t* viewDef )
 	{
 		idRenderEntityLocal* ent = viewEnt->entityDef;
 		
+		if ( !ent ) continue;
+
 		if( ent->archived )
 		{
 			// still up to date
@@ -337,11 +340,13 @@ void	idRenderWorldLocal::WriteVisibleDefs( const viewDef_t* viewDef )
 		WriteRenderEntity( ent->index, &ent->parms );
 		ent->archived = true;
 	}
-	
+
 	for( viewLight_t* viewLight = viewDef->viewLights ; viewLight ; viewLight = viewLight->next )
 	{
 		idRenderLightLocal* light = viewLight->lightDef;
 		
+		if ( !light ) continue;
+
 		if( light->archived )
 		{
 			// still up to date
@@ -513,7 +518,7 @@ ReadRenderLight
 void	idRenderWorldLocal::ReadRenderLight( )
 {
 	renderLight_t	light;
-	int				index;
+	int		temp,	index;
 	
 	common->ReadDemo()->ReadInt( index );
 	if( index < 0 )
@@ -536,12 +541,15 @@ void	idRenderWorldLocal::ReadRenderLight( )
 	common->ReadDemo()->ReadVec3( light.up );
 	common->ReadDemo()->ReadVec3( light.start );
 	common->ReadDemo()->ReadVec3( light.end );
-	common->ReadDemo()->ReadInt( ( int& )light.prelightModel );
+	common->ReadDemo()->ReadInt( temp );
+		light.prelightModel = ( idRenderModel* )temp;
 	common->ReadDemo()->ReadInt( light.lightId );
-	common->ReadDemo()->ReadInt( ( int& )light.shader );
+	common->ReadDemo()->ReadInt( temp );
+		light.shader = ( const idMaterial* )temp;
 	for( int i = 0; i < MAX_ENTITY_SHADER_PARMS; i++ )
 		common->ReadDemo()->ReadFloat( light.shaderParms[i] );
-	common->ReadDemo()->ReadInt( ( int& )light.referenceSound );
+	common->ReadDemo()->ReadInt( temp );
+		light.referenceSound = ( idSoundEmitter* )temp;
 	if( light.prelightModel )
 	{
 		light.prelightModel = renderModelManager->FindModel( common->ReadDemo()->ReadHashString() );
@@ -688,7 +696,7 @@ ReadRenderEntity
 void	idRenderWorldLocal::ReadRenderEntity()
 {
 	renderEntity_t		ent;
-	int				index, i;
+	int			temp,	index, i;
 	
 	common->ReadDemo()->ReadInt( index );
 	if( index < 0 )
@@ -696,34 +704,44 @@ void	idRenderWorldLocal::ReadRenderEntity()
 		common->Error( "ReadRenderEntity: index < 0" );
 	}
 	
-	common->ReadDemo()->ReadInt( ( int& )ent.hModel );
+	common->ReadDemo()->ReadInt( temp );
+		ent.hModel = ( idRenderModel* )temp;
 	common->ReadDemo()->ReadInt( ent.entityNum );
 	common->ReadDemo()->ReadInt( ent.bodyId );
 	common->ReadDemo()->ReadVec3( ent.bounds[0] );
 	common->ReadDemo()->ReadVec3( ent.bounds[1] );
-	common->ReadDemo()->ReadInt( ( int& )ent.callback );
-	common->ReadDemo()->ReadInt( ( int& )ent.callbackData );
+	common->ReadDemo()->ReadInt( temp );
+		ent.callback = ( deferredEntityCallback_t )temp;
+	common->ReadDemo()->ReadInt( temp );
+		ent.callbackData = ( void* )temp;
 	common->ReadDemo()->ReadInt( ent.suppressSurfaceInViewID );
 	common->ReadDemo()->ReadInt( ent.suppressShadowInViewID );
 	common->ReadDemo()->ReadInt( ent.suppressShadowInLightID );
 	common->ReadDemo()->ReadInt( ent.allowSurfaceInViewID );
 	common->ReadDemo()->ReadVec3( ent.origin );
 	common->ReadDemo()->ReadMat3( ent.axis );
-	common->ReadDemo()->ReadInt( ( int& )ent.customShader );
-	common->ReadDemo()->ReadInt( ( int& )ent.referenceShader );
-	common->ReadDemo()->ReadInt( ( int& )ent.customSkin );
-	common->ReadDemo()->ReadInt( ( int& )ent.referenceSound );
+	common->ReadDemo()->ReadInt( temp );
+		ent.customShader = ( const idMaterial* )temp;
+	common->ReadDemo()->ReadInt( temp );
+		ent.referenceShader = ( const idMaterial* )temp;
+	common->ReadDemo()->ReadInt( temp );
+		ent.customSkin = ( const idDeclSkin* )temp;
+	common->ReadDemo()->ReadInt( temp );
+		ent.referenceSound = ( idSoundEmitter* )temp;
 	for( i = 0; i < MAX_ENTITY_SHADER_PARMS; i++ )
 	{
 		common->ReadDemo()->ReadFloat( ent.shaderParms[i] );
 	}
 	for( i = 0; i < MAX_RENDERENTITY_GUI; i++ )
 	{
-		common->ReadDemo()->ReadInt( ( int& )ent.gui[i] );
+		common->ReadDemo()->ReadInt( temp );
+		ent.gui[i] = ( idUserInterface* )temp;
 	}
-	common->ReadDemo()->ReadInt( ( int& )ent.remoteRenderView );
+	common->ReadDemo()->ReadInt( temp );
+		ent.remoteRenderView = ( renderView_s* )temp;
 	common->ReadDemo()->ReadInt( ent.numJoints );
-	common->ReadDemo()->ReadInt( ( int& )ent.joints );
+	common->ReadDemo()->ReadInt( temp );
+		ent.joints = ( idJointMat* )temp;
 	common->ReadDemo()->ReadFloat( ent.modelDepthHack );
 	common->ReadDemo()->ReadBool( ent.noSelfShadow );
 	common->ReadDemo()->ReadBool( ent.noShadow );

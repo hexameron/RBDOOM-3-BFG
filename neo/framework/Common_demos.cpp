@@ -216,8 +216,10 @@ void idCommonLocal::StartPlayingRenderDemo( idStr demoName )
 	}
 	
 	const bool captureToImage = false;
-	UpdateScreen( captureToImage );
-	
+	/* RenderDemos are not recording end of frames, or setting
+		viewport fov, so do not try to render yet */
+	//UpdateScreen( captureToImage );
+
 	AdvanceRenderDemo( true );
 	
 	numDemoFrames = 1;
@@ -232,10 +234,27 @@ idCommonLocal::TimeRenderDemo
 */
 void idCommonLocal::TimeRenderDemo( const char* demoName, bool twice, bool quit )
 {
+	bool finished;
 	idStr demo = demoName;
 	
+	timeDemo = TD_YES;
 	StartPlayingRenderDemo( demo );
+	int framenum = numDemoFrames;
+
+	const bool captureToImage = false;
+	while( readDemo && !finished )
+	{
+		finished = AdvanceRenderDemo( true );
+		if (framenum < numDemoFrames)
+		{
+			framenum++;
+			//UpdateScreen( captureToImage );
+		}
+	}
+
+	StopPlayingRenderDemo();
 	
+/* Fix playing once before trying twice.
 	if( twice && readDemo )
 	{
 		while( readDemo )
@@ -248,6 +267,10 @@ void idCommonLocal::TimeRenderDemo( const char* demoName, bool twice, bool quit 
 		StartPlayingRenderDemo( demo );
 	}
 	
+*/
+
+	Stop();
+	StartMenu();
 	
 	if( !readDemo )
 	{
@@ -426,7 +449,7 @@ void idCommonLocal::CompressDemoFile( const char* scheme, const char* demoName )
 idCommonLocal::AdvanceRenderDemo
 ===============
 */
-void idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
+bool idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 {
 	int	ds = DS_FINISHED;
 	readDemo->ReadInt( ds );
@@ -434,6 +457,8 @@ void idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 	switch( ds )
 	{
 		case DS_FINISHED:
+			return true;
+			// End of file.
 			if( numDemoFrames != 1 )
 			{
 				// if the demo has a single frame (a demoShot), continuously replay
@@ -441,7 +466,7 @@ void idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 				Stop();
 				StartMenu();
 			}
-			return;
+			break;
 		case DS_RENDER:
 			if( renderWorld->ProcessDemoCommand( readDemo, &currentDemoRenderView, &demoTimeOffset ) )
 			{
@@ -452,9 +477,16 @@ void idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 		case DS_SOUND:
 			soundWorld->ProcessDemoCommand( readDemo );
 			break;
+		case DS_VERSION:
+			// discard result.
+			readDemo->ReadInt( ds );
+			break;
 		default:
 			common->Error( "Bad render demo token" );
+			// a file error forces finish
+			return true;
 	}
+	return false;
 }
 
 /*
