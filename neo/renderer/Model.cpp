@@ -2688,9 +2688,7 @@ void idRenderModelStatic::ReadFromDemoFile( class idDemoFile* f )
 		f->ReadInt( tri->numIndexes );
 		R_AllocStaticTriSurfIndexes( tri, tri->numIndexes );
 		for( j = 0; j < tri->numIndexes; ++j )
-			f->ReadInt( ( int& )tri->indexes[j] );
-			/* Some ReadInts need sign-extending for 64bit
-				triIndex_t may be unsigned short  */
+			f->ReadUnsignedShort( tri->indexes[j] );
 			
 		f->ReadInt( tri->numVerts );
 		R_AllocStaticTriSurfVerts( tri, tri->numVerts );
@@ -2743,7 +2741,7 @@ void idRenderModelStatic::WriteToDemoFile( class idDemoFile* f )
 		srfTriangles_t* tri = surf->geometry;
 		f->WriteInt( tri->numIndexes );
 		for( j = 0; j < tri->numIndexes; ++j )
-			f->WriteInt( ( int& )tri->indexes[j] );
+			f->WriteUnsignedShort( tri->indexes[j] );
 		f->WriteInt( tri->numVerts );
 		for( j = 0; j < tri->numVerts; ++j )
 		{

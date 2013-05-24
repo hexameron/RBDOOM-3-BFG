@@ -156,7 +156,7 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 			{
 				return false;
 			}
-			renderView->globalMaterial = ( const idMaterial* )temp;
+			renderView->globalMaterial = ( const idMaterial* )(intptr_t)temp;
 			
 			if( r_showDemo.GetBool() )
 			{
@@ -542,14 +542,14 @@ void	idRenderWorldLocal::ReadRenderLight( )
 	common->ReadDemo()->ReadVec3( light.start );
 	common->ReadDemo()->ReadVec3( light.end );
 	common->ReadDemo()->ReadInt( temp );
-		light.prelightModel = ( idRenderModel* )temp;
+		light.prelightModel = ( idRenderModel* )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( light.lightId );
 	common->ReadDemo()->ReadInt( temp );
-		light.shader = ( const idMaterial* )temp;
+		light.shader = ( const idMaterial* )(intptr_t)temp;
 	for( int i = 0; i < MAX_ENTITY_SHADER_PARMS; i++ )
 		common->ReadDemo()->ReadFloat( light.shaderParms[i] );
 	common->ReadDemo()->ReadInt( temp );
-		light.referenceSound = ( idSoundEmitter* )temp;
+		light.referenceSound = ( idSoundEmitter* )(intptr_t)temp;
 	if( light.prelightModel )
 	{
 		light.prelightModel = renderModelManager->FindModel( common->ReadDemo()->ReadHashString() );
@@ -705,15 +705,15 @@ void	idRenderWorldLocal::ReadRenderEntity()
 	}
 	
 	common->ReadDemo()->ReadInt( temp );
-		ent.hModel = ( idRenderModel* )temp;
+		ent.hModel = ( idRenderModel* )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( ent.entityNum );
 	common->ReadDemo()->ReadInt( ent.bodyId );
 	common->ReadDemo()->ReadVec3( ent.bounds[0] );
 	common->ReadDemo()->ReadVec3( ent.bounds[1] );
 	common->ReadDemo()->ReadInt( temp );
-		ent.callback = ( deferredEntityCallback_t )temp;
+		ent.callback = ( deferredEntityCallback_t )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( temp );
-		ent.callbackData = ( void* )temp;
+		ent.callbackData = ( void* )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( ent.suppressSurfaceInViewID );
 	common->ReadDemo()->ReadInt( ent.suppressShadowInViewID );
 	common->ReadDemo()->ReadInt( ent.suppressShadowInLightID );
@@ -721,13 +721,13 @@ void	idRenderWorldLocal::ReadRenderEntity()
 	common->ReadDemo()->ReadVec3( ent.origin );
 	common->ReadDemo()->ReadMat3( ent.axis );
 	common->ReadDemo()->ReadInt( temp );
-		ent.customShader = ( const idMaterial* )temp;
+		ent.customShader = ( const idMaterial* )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( temp );
-		ent.referenceShader = ( const idMaterial* )temp;
+		ent.referenceShader = ( const idMaterial* )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( temp );
-		ent.customSkin = ( const idDeclSkin* )temp;
+		ent.customSkin = ( const idDeclSkin* )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( temp );
-		ent.referenceSound = ( idSoundEmitter* )temp;
+		ent.referenceSound = ( idSoundEmitter* )(intptr_t)temp;
 	for( i = 0; i < MAX_ENTITY_SHADER_PARMS; i++ )
 	{
 		common->ReadDemo()->ReadFloat( ent.shaderParms[i] );
@@ -735,13 +735,13 @@ void	idRenderWorldLocal::ReadRenderEntity()
 	for( i = 0; i < MAX_RENDERENTITY_GUI; i++ )
 	{
 		common->ReadDemo()->ReadInt( temp );
-		ent.gui[i] = ( idUserInterface* )temp;
+		ent.gui[i] = ( idUserInterface* )(intptr_t)temp;
 	}
 	common->ReadDemo()->ReadInt( temp );
-		ent.remoteRenderView = ( renderView_s* )temp;
+		ent.remoteRenderView = ( renderView_s* )(intptr_t)temp;
 	common->ReadDemo()->ReadInt( ent.numJoints );
 	common->ReadDemo()->ReadInt( temp );
-		ent.joints = ( idJointMat* )temp;
+		ent.joints = ( idJointMat* )(intptr_t)temp;
 	common->ReadDemo()->ReadFloat( ent.modelDepthHack );
 	common->ReadDemo()->ReadBool( ent.noSelfShadow );
 	common->ReadDemo()->ReadBool( ent.noShadow );
