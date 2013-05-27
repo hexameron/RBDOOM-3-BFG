@@ -131,6 +131,9 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 				common->Printf( "DC_LOADMAP: %s\n", header.mapname );
 			}
 			InitFromMap( header.mapname );
+
+			common->Printf( "----- Generating Interactions -----\n" );
+			GenerateAllInteractions();
 			
 			newMap = true;		// we will need to set demoTimeOffset
 			
@@ -160,7 +163,7 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 			
 			if( r_showDemo.GetBool() )
 			{
-				common->Printf( "DC_RENDERVIEW: %i\n", renderView->time );
+				common->Printf( "DC_RENDERVIEW: %i\n", renderView->time[1] );
 			}
 			
 			// possibly change the time offset if this is from a new map
@@ -395,7 +398,7 @@ void	idRenderWorldLocal::WriteRenderView( const renderView_t* renderView )
 	
 	if( r_showDemo.GetBool() )
 	{
-		common->Printf( "write DC_RENDERVIEW: %i\n", renderView->time );
+		common->Printf( "write DC_RENDERVIEW: %i\n", renderView->time[1] );
 	}
 }
 

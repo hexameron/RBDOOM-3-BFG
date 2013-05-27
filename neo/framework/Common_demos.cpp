@@ -215,15 +215,7 @@ void idCommonLocal::StartPlayingRenderDemo( idStr demoName )
 		return;
 	}
 	
-	const bool captureToImage = false;
-	/* RenderDemos are not recording end of frames, or setting
-		viewport fov, so do not try to render yet */
-	//UpdateScreen( captureToImage );
-
-	AdvanceRenderDemo( true );
-	
-	numDemoFrames = 1;
-	
+	numDemoFrames = 0;
 	timeDemoStartTime = Sys_Milliseconds();
 }
 
@@ -234,40 +226,32 @@ idCommonLocal::TimeRenderDemo
 */
 void idCommonLocal::TimeRenderDemo( const char* demoName, bool twice, bool quit )
 {
-	bool finished;
+	bool finished = false;
 	idStr demo = demoName;
 	
-	timeDemo = TD_YES;
 	StartPlayingRenderDemo( demo );
-	int framenum = numDemoFrames;
 
-	const bool captureToImage = false;
 	while( readDemo && !finished )
 	{
 		finished = AdvanceRenderDemo( true );
-		if (framenum < numDemoFrames)
-		{
-			framenum++;
-			//UpdateScreen( captureToImage );
-		}
 	}
 
+	timeDemo = TD_YES;
 	StopPlayingRenderDemo();
 	
-/* Fix playing once before trying twice.
-	if( twice && readDemo )
+	if( twice )
 	{
-		while( readDemo )
+		StartPlayingRenderDemo( demo );
+		finished = false;
+
+		while( readDemo && !finished )
 		{
-			const bool captureToImage = false;
-			UpdateScreen( captureToImage );
 			AdvanceRenderDemo( true );
 		}
-		
-		StartPlayingRenderDemo( demo );
+
+		timeDemo = TD_YES;
+		StopPlayingRenderDemo();
 	}
-	
-*/
 
 	Stop();
 	StartMenu();
@@ -451,6 +435,7 @@ idCommonLocal::AdvanceRenderDemo
 */
 bool idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 {
+	const bool captureToImage = false;
 	int	ds = DS_FINISHED;
 	readDemo->ReadInt( ds );
 	
@@ -459,19 +444,13 @@ bool idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 		case DS_FINISHED:
 			return true;
 			// End of file.
-			if( numDemoFrames != 1 )
-			{
-				// if the demo has a single frame (a demoShot), continuously replay
-				// the renderView that has already been read
-				Stop();
-				StartMenu();
-			}
-			break;
 		case DS_RENDER:
 			if( renderWorld->ProcessDemoCommand( readDemo, &currentDemoRenderView, &demoTimeOffset ) )
 			{
 				// a view is ready to render
-				numDemoFrames++;
+				if ( numDemoFrames++ > 0 )
+					// assumes first frame is crrupt.
+					UpdateScreen( captureToImage );
 			}
 			break;
 		case DS_SOUND:
