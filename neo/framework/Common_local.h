@@ -331,7 +331,7 @@ public:	// These are public because they are called directly by static functions
 	void	StartPlayingRenderDemo( idStr name );
 	void	StopPlayingRenderDemo();
 	void	CompressDemoFile( const char* scheme, const char* name );
-	void	TimeRenderDemo( const char* name, bool twice = false, bool quit = false );
+	void	TimeRenderDemo( const char* name, int loops = 1, bool quit = false );
 	void	AVIRenderDemo( const char* name );
 	void	AVIGame( const char* name );
 	
@@ -561,8 +561,9 @@ private:
 	void	EndAVICapture();
 	
 	/* Reads a single command, not a single frame
+		use delay for slow motion playback
 		return true at end of file */
-	bool    AdvanceRenderDemo( bool singleFrameOnly );
+	bool    AdvanceRenderDemo( int delay );
 	
 	void	ProcessGameReturn( const gameReturn_t& ret );
 	

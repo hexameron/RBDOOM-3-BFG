@@ -224,7 +224,7 @@ void idCommonLocal::StartPlayingRenderDemo( idStr demoName )
 idCommonLocal::TimeRenderDemo
 ================
 */
-void idCommonLocal::TimeRenderDemo( const char* demoName, bool twice, bool quit )
+void idCommonLocal::TimeRenderDemo( const char* demoName, int twice, bool quit )
 {
 	bool finished = false;
 	idStr demo = demoName;
@@ -233,20 +233,24 @@ void idCommonLocal::TimeRenderDemo( const char* demoName, bool twice, bool quit 
 
 	while( readDemo && !finished )
 	{
-		finished = AdvanceRenderDemo( true );
+		finished = AdvanceRenderDemo( -twice );
 	}
 
-	timeDemo = TD_YES;
+	if( quit )
+		timeDemo = TD_YES_THEN_QUIT;
+	else
+		timeDemo = TD_YES;
+
 	StopPlayingRenderDemo();
 	
-	if( twice )
+	while ( --twice > 0 )
 	{
 		StartPlayingRenderDemo( demo );
 		finished = false;
 
 		while( readDemo && !finished )
 		{
-			AdvanceRenderDemo( true );
+			finished = AdvanceRenderDemo( 0 );
 		}
 
 		timeDemo = TD_YES;
@@ -255,21 +259,6 @@ void idCommonLocal::TimeRenderDemo( const char* demoName, bool twice, bool quit 
 
 	Stop();
 	StartMenu();
-	
-	if( !readDemo )
-	{
-		return;
-	}
-	
-	if( quit )
-	{
-		// this allows hardware vendors to automate some testing
-		timeDemo = TD_YES_THEN_QUIT;
-	}
-	else
-	{
-		timeDemo = TD_YES;
-	}
 }
 
 
@@ -433,7 +422,7 @@ void idCommonLocal::CompressDemoFile( const char* scheme, const char* demoName )
 idCommonLocal::AdvanceRenderDemo
 ===============
 */
-bool idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
+bool idCommonLocal::AdvanceRenderDemo( int delay )
 {
 	const bool captureToImage = false;
 	int	ds = DS_FINISHED;
@@ -451,6 +440,8 @@ bool idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 				if ( numDemoFrames++ > 0 )
 					// assumes first frame is crrupt.
 					UpdateScreen( captureToImage );
+				if ( delay > 0 )
+					Sys_Sleep( delay << 4 );
 			}
 			break;
 		case DS_SOUND:
@@ -544,7 +535,7 @@ CONSOLE_COMMAND( playDemo, "plays back a demo", idCmdSystem::ArgCompletion_DemoN
 {
 	if( args.Argc() >= 2 )
 	{
-		commonLocal.StartPlayingRenderDemo( va( "demos/%s", args.Argv( 1 ) ) );
+		commonLocal.TimeRenderDemo( va( "demos/%s", args.Argv( 1 ) ) );
 	}
 }
 
@@ -555,9 +546,12 @@ Common_TimeDemo_f
 */
 CONSOLE_COMMAND( timeDemo, "times a demo", idCmdSystem::ArgCompletion_DemoName )
 {
+	int loops = 1;
+	if( args.Argc() > 2 )
+		loops = atoi( args.Argv( 2 ) );
 	if( args.Argc() >= 2 )
 	{
-		commonLocal.TimeRenderDemo( va( "demos/%s", args.Argv( 1 ) ), ( args.Argc() > 2 ), false );
+		commonLocal.TimeRenderDemo( va( "demos/%s", args.Argv( 1 ) ), loops, false );
 	}
 }
 
@@ -568,7 +562,7 @@ Common_TimeDemoQuit_f
 */
 CONSOLE_COMMAND( timeDemoQuit, "times a demo and quits", idCmdSystem::ArgCompletion_DemoName )
 {
-	commonLocal.TimeRenderDemo( va( "demos/%s", args.Argv( 1 ) ), true );
+	commonLocal.TimeRenderDemo( va( "demos/%s", args.Argv( 1 ) ), 1, true );
 }
 
 /*
