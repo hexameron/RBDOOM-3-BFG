@@ -102,6 +102,7 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 	
 	int	temp,	dc;
 	qhandle_t		h;
+	idStrStatic< MAX_OSPATH > fullMapName;
 	
 	if( !readDemo->ReadInt( dc ) )
 	{
@@ -126,16 +127,38 @@ bool		idRenderWorldLocal::ProcessDemoCommand( idDemoFile* readDemo, renderView_t
 				common->Printf( "Demo version mismatch.\n" );
 			}
 			
-			if( r_showDemo.GetBool() )
-			{
-				common->Printf( "DC_LOADMAP: %s\n", header.mapname );
-			}
-			InitFromMap( header.mapname );
+			common->Printf( "DC_LOADMAP: %s \n", header.mapname );
 
-			common->Printf( "----- Generating Interactions -----\n" );
+			if( !common->RW()->InitFromMap( header.mapname ) )
+			{
+			// Works better if map was loaded by saved game... try loading anyway
+				fullMapName = header.mapname;
+				fullMapName.StripFileExtension();
+				fullMapName.Replace( "game/", "maps/" );
+				fileSystem->BeginLevelLoad( fullMapName, NULL, 0 );
+
+				renderSystem->BeginLevelLoad();
+				soundSystem->BeginLevelLoad();
+				declManager->BeginLevelLoad();
+				uiManager->BeginLevelLoad();
+
+				common->RW()->InitFromMap( header.mapname );
+				common->Game()->InitFromNewMap( header.mapname, common->RW(), common->SW(), -2, Sys_Milliseconds() );
+
+				renderSystem->EndLevelLoad();
+				soundSystem->EndLevelLoad();
+				declManager->EndLevelLoad();
+				uiManager->EndLevelLoad( fullMapName );
+				fileSystem->EndLevelLoad();
+			}
+
 			GenerateAllInteractions();
 			
 			newMap = true;		// we will need to set demoTimeOffset
+
+			common->SW()->Pause();
+			soundSystem->SetPlayingSoundWorld( common->SW() );
+			soundSystem->Render();
 			
 			break;
 			
